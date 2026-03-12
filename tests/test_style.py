@@ -1,4 +1,5 @@
 """Tests for style.py."""
+
 from dataclasses import FrozenInstanceError
 
 import pytest

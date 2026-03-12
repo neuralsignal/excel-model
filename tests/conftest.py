@@ -1,4 +1,5 @@
 """Shared fixtures for excel_model tests."""
+
 import pytest
 
 from excel_model.spec import (
@@ -32,7 +33,8 @@ def basic_line_items():
             formula_params={"growth_assumption": "RevenueGrowthRate"},
             is_subtotal=False,
             is_total=False,
-            section="Revenue", format="",
+            section="Revenue",
+            format="",
         ),
         LineItemDef(
             key="cogs",
@@ -41,7 +43,8 @@ def basic_line_items():
             formula_params={"revenue_key": "revenue", "rate_assumption": "COGSMargin"},
             is_subtotal=False,
             is_total=False,
-            section="Cost", format="",
+            section="Cost",
+            format="",
         ),
         LineItemDef(
             key="gross_profit",
@@ -50,7 +53,8 @@ def basic_line_items():
             formula_params={"minuend_key": "revenue", "subtrahend_key": "cogs"},
             is_subtotal=True,
             is_total=False,
-            section="Profit", format="",
+            section="Profit",
+            format="",
         ),
     )
 

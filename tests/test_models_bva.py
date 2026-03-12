@@ -1,4 +1,5 @@
 """Tests for Budget vs Actuals model builder."""
+
 import pytest
 from openpyxl import Workbook
 
@@ -44,8 +45,7 @@ def bva_spec():
         n_periods=3,
         n_history_periods=0,
         assumptions=(
-            AssumptionDef(name="RevenueGrowthRate", label="Rev Growth",
-                          value=0.08, format="percent", group="Budget"),
+            AssumptionDef(name="RevenueGrowthRate", label="Rev Growth", value=0.08, format="percent", group="Budget"),
         ),
         line_items=(
             LineItemDef(
@@ -53,21 +53,30 @@ def bva_spec():
                 label="Revenue (Plan)",
                 formula_type="constant",
                 formula_params={"value": 1000},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
             LineItemDef(
                 key="revenue_actual",
                 label="Revenue (Actual)",
                 formula_type="constant",
                 formula_params={"value": 1050},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
             LineItemDef(
                 key="revenue",
                 label="Revenue Variance",
                 formula_type="variance",
                 formula_params={"plan_key": "revenue_plan", "actual_key": "revenue_actual"},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="", date="", version="1.0"),

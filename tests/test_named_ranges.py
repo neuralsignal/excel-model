@@ -1,4 +1,5 @@
 """Tests for named_ranges.py."""
+
 from openpyxl import Workbook
 
 from excel_model.named_ranges import get_col_letter, register_named_range

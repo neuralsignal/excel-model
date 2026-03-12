@@ -1,4 +1,5 @@
 """Comparison model builder — entities as columns (not time periods)."""
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter

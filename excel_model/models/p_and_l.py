@@ -1,4 +1,5 @@
 """P&L sheet builder."""
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, Side
 from openpyxl.utils import get_column_letter

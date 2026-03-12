@@ -1,4 +1,5 @@
 """Tests for Comparison model builder."""
+
 import pytest
 from openpyxl import Workbook
 
@@ -44,28 +45,44 @@ def comparison_spec():
         assumptions=(),
         line_items=(
             LineItemDef(
-                key="revenue", label="Revenue (EUR M)",
+                key="revenue",
+                label="Revenue (EUR M)",
                 formula_type="constant",
                 formula_params={"value": 0},
-                is_subtotal=False, is_total=False, section="Financials", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Financials",
+                format="",
             ),
             LineItemDef(
-                key="ebitda", label="EBITDA (EUR M)",
+                key="ebitda",
+                label="EBITDA (EUR M)",
                 formula_type="constant",
                 formula_params={"value": 0},
-                is_subtotal=False, is_total=False, section="Financials", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Financials",
+                format="",
             ),
             LineItemDef(
-                key="ebitda_margin", label="EBITDA Margin",
+                key="ebitda_margin",
+                label="EBITDA Margin",
                 formula_type="ratio",
                 formula_params={"numerator_key": "ebitda", "denominator_key": "revenue"},
-                is_subtotal=False, is_total=False, section="Efficiency", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Efficiency",
+                format="",
             ),
             LineItemDef(
-                key="revenue_rank", label="Revenue Rank",
+                key="revenue_rank",
+                label="Revenue Rank",
                 formula_type="rank",
                 formula_params={"value_key": "revenue"},
-                is_subtotal=False, is_total=False, section="Rankings", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Rankings",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="", date="", version="1.0"),

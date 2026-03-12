@@ -1,4 +1,5 @@
 """Tests for new formula types: sum_subtraction, rank, index_to_base, bar_chart_text, fixed npv_sum."""
+
 from excel_model.formula_engine import CellContext, render_formula
 
 
@@ -11,8 +12,16 @@ def make_ctx(**overrides) -> CellContext:
         col_letter="D",
         prior_col_letter="C",
         named_ranges={"WACC": "WACC", "TGR": "TGR"},
-        row_map={"nopat": 8, "capex": 9, "nwc_change": 10, "fcf": 11,
-                 "pv_fcf": 12, "pv_terminal": 13, "revenue": 5, "ebitda": 6},
+        row_map={
+            "nopat": 8,
+            "capex": 9,
+            "nwc_change": 10,
+            "fcf": 11,
+            "pv_fcf": 12,
+            "pv_terminal": 13,
+            "revenue": 5,
+            "ebitda": 6,
+        },
         inputs_row_map={},
         scenario_prefix="",
         first_proj_col_letter="D",

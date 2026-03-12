@@ -1,4 +1,5 @@
 """Tests for formula_engine.py."""
+
 import pytest
 
 from excel_model.formula_engine import CellContext, render_formula
@@ -94,7 +95,11 @@ class TestInputRef:
         )
         result = render_formula(
             "input_ref",
-            {"line_item_key": "revenue", "projected_type": "growth_projected", "growth_assumption": "RevenueGrowthRate"},
+            {
+                "line_item_key": "revenue",
+                "projected_type": "growth_projected",
+                "growth_assumption": "RevenueGrowthRate",
+            },
             ctx,
         )
         assert result.startswith("=Inputs!")
@@ -347,18 +352,25 @@ class TestCustomScenarioPrefix:
 class TestResolveNameWithDrivers:
     def test_driver_gets_prefixed(self):
         ctx = make_ctx(
-            period_index=2, n_history=2,
+            period_index=2,
+            n_history=2,
             scenario_prefix="Bull",
             named_ranges={"RevenueGrowthRate": "RevenueGrowthRate", "PatientCount": "PatientCount"},
         )
         # Manually create ctx with driver_names
         ctx = CellContext(
-            period_index=2, n_history=2, row=10, col=4,
-            col_letter="D", prior_col_letter="C",
+            period_index=2,
+            n_history=2,
+            row=10,
+            col=4,
+            col_letter="D",
+            prior_col_letter="C",
             named_ranges={"RevenueGrowthRate": "RevenueGrowthRate", "PatientCount": "PatientCount"},
-            row_map={"revenue": 10}, inputs_row_map={},
+            row_map={"revenue": 10},
+            inputs_row_map={},
             scenario_prefix="Bull",
-            first_proj_col_letter="", last_proj_col_letter="",
+            first_proj_col_letter="",
+            last_proj_col_letter="",
             entity_col_range="",
             driver_names=frozenset({"PatientCount"}),
         )
@@ -371,12 +383,18 @@ class TestResolveNameWithDrivers:
 
     def test_assumption_stays_bare_when_driver_names_set(self):
         ctx = CellContext(
-            period_index=2, n_history=2, row=10, col=4,
-            col_letter="D", prior_col_letter="C",
+            period_index=2,
+            n_history=2,
+            row=10,
+            col=4,
+            col_letter="D",
+            prior_col_letter="C",
             named_ranges={"RevenueGrowthRate": "RevenueGrowthRate", "PatientCount": "PatientCount"},
-            row_map={"revenue": 10}, inputs_row_map={},
+            row_map={"revenue": 10},
+            inputs_row_map={},
             scenario_prefix="Bull",
-            first_proj_col_letter="", last_proj_col_letter="",
+            first_proj_col_letter="",
+            last_proj_col_letter="",
             entity_col_range="",
             driver_names=frozenset({"PatientCount"}),
         )
@@ -391,12 +409,18 @@ class TestResolveNameWithDrivers:
 
     def test_legacy_mode_prefixes_all(self):
         ctx = CellContext(
-            period_index=2, n_history=2, row=10, col=4,
-            col_letter="D", prior_col_letter="C",
+            period_index=2,
+            n_history=2,
+            row=10,
+            col=4,
+            col_letter="D",
+            prior_col_letter="C",
             named_ranges={"RevenueGrowthRate": "RevenueGrowthRate"},
-            row_map={"revenue": 10}, inputs_row_map={},
+            row_map={"revenue": 10},
+            inputs_row_map={},
             scenario_prefix="Bull",
-            first_proj_col_letter="", last_proj_col_letter="",
+            first_proj_col_letter="",
+            last_proj_col_letter="",
             entity_col_range="",
             driver_names=frozenset(),  # empty = legacy mode
         )
@@ -409,12 +433,18 @@ class TestResolveNameWithDrivers:
 
     def test_no_prefix_when_scenario_prefix_empty(self):
         ctx = CellContext(
-            period_index=2, n_history=2, row=10, col=4,
-            col_letter="D", prior_col_letter="C",
+            period_index=2,
+            n_history=2,
+            row=10,
+            col=4,
+            col_letter="D",
+            prior_col_letter="C",
             named_ranges={"PatientCount": "PatientCount"},
-            row_map={"revenue": 10}, inputs_row_map={},
+            row_map={"revenue": 10},
+            inputs_row_map={},
             scenario_prefix="",
-            first_proj_col_letter="", last_proj_col_letter="",
+            first_proj_col_letter="",
+            last_proj_col_letter="",
             entity_col_range="",
             driver_names=frozenset({"PatientCount"}),
         )
@@ -431,12 +461,18 @@ class TestResolveNameWithDrivers:
 class TestCustomFormulaWithDrivers:
     def test_only_driver_names_prefixed(self):
         ctx = CellContext(
-            period_index=0, n_history=0, row=10, col=4,
-            col_letter="D", prior_col_letter="C",
+            period_index=0,
+            n_history=0,
+            row=10,
+            col=4,
+            col_letter="D",
+            prior_col_letter="C",
             named_ranges={"PatientCount": "PatientCount", "CROPerPatient": "CROPerPatient"},
-            row_map={"revenue": 10}, inputs_row_map={},
+            row_map={"revenue": 10},
+            inputs_row_map={},
             scenario_prefix="Standard",
-            first_proj_col_letter="", last_proj_col_letter="",
+            first_proj_col_letter="",
+            last_proj_col_letter="",
             entity_col_range="",
             driver_names=frozenset({"PatientCount"}),
         )
@@ -452,16 +488,22 @@ class TestCustomFormulaWithDrivers:
 
     def test_assumption_names_left_bare_in_mixed_formula(self):
         ctx = CellContext(
-            period_index=0, n_history=0, row=10, col=4,
-            col_letter="D", prior_col_letter="C",
+            period_index=0,
+            n_history=0,
+            row=10,
+            col=4,
+            col_letter="D",
+            prior_col_letter="C",
             named_ranges={
                 "PatientCount": "PatientCount",
                 "PerPatientPrice": "PerPatientPrice",
                 "CROPerPatient": "CROPerPatient",
             },
-            row_map={"total_contract": 5, "revenue": 10}, inputs_row_map={},
+            row_map={"total_contract": 5, "revenue": 10},
+            inputs_row_map={},
             scenario_prefix="Premium",
-            first_proj_col_letter="", last_proj_col_letter="",
+            first_proj_col_letter="",
+            last_proj_col_letter="",
             entity_col_range="",
             driver_names=frozenset({"PatientCount", "PerPatientPrice"}),
         )

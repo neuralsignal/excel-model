@@ -1,4 +1,5 @@
 """Property-based tests using hypothesis."""
+
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -20,6 +21,7 @@ FORMULA_TYPES_WITH_SIMPLE_PARAMS = [
 
 def make_ctx(period_index: int, n_history: int, col: int) -> CellContext:
     from excel_model.named_ranges import get_col_letter
+
     col_letter = get_col_letter(col)
     prior_col_letter = get_col_letter(col - 1) if col > 2 else ""
     return CellContext(

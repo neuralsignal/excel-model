@@ -1,4 +1,5 @@
 """CLI entry point for excel-model."""
+
 import json
 import sys
 from pathlib import Path
@@ -17,11 +18,22 @@ def main() -> None:
 @main.command()
 @click.option("--spec", required=True, type=click.Path(exists=True), help="Path to model spec YAML")
 @click.option("--output", required=True, type=click.Path(), help="Path for output .xlsx file")
-@click.option("--style", required=False, type=click.Path(exists=True), help="Path to style config YAML (uses bundled defaults if omitted)")
+@click.option(
+    "--style",
+    required=False,
+    type=click.Path(exists=True),
+    help="Path to style config YAML (uses bundled defaults if omitted)",
+)
 @click.option("--data", required=False, type=click.Path(exists=True), help="Path to input data file")
-@click.option("--mode", required=True, type=click.Choice(["batch", "interactive"]), help="batch = JSON to stdout; interactive = verbose narrative")
+@click.option(
+    "--mode",
+    required=True,
+    type=click.Choice(["batch", "interactive"]),
+    help="batch = JSON to stdout; interactive = verbose narrative",
+)
 def build(spec: str, output: str, style: str | None, data: str | None, mode: str) -> None:
     """Build an Excel financial model from a YAML spec."""
+
     def emit_error(message: str) -> None:
         if mode == "batch":
             click.echo(json.dumps({"status": "error", "message": message}))
@@ -37,6 +49,7 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
     emit_info(f"Loading model spec: {spec}")
     try:
         from excel_model.spec_loader import load_spec
+
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         emit_error(f"Failed to load spec: {e}")
@@ -45,13 +58,16 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
     # Validate spec
     emit_info("Validating model spec...")
     from excel_model.validator import validate_spec
+
     errors = validate_spec(loaded_spec)
     if errors:
         emit_error("Spec validation failed:\n" + "\n".join(f"  - {e}" for e in errors))
     emit_info(f"  Model type: {loaded_spec.model_type}")
     emit_info(f"  Title: {loaded_spec.title}")
     emit_info(f"  Currency: {loaded_spec.currency}")
-    emit_info(f"  Periods: {loaded_spec.n_history_periods} history + {loaded_spec.n_periods} projection ({loaded_spec.granularity})")
+    emit_info(
+        f"  Periods: {loaded_spec.n_history_periods} history + {loaded_spec.n_periods} projection ({loaded_spec.granularity})"
+    )
     emit_info(f"  Assumptions: {len(loaded_spec.assumptions)}")
     emit_info(f"  Line items: {len(loaded_spec.line_items)}")
 
@@ -69,6 +85,7 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
         emit_info(f"Loading input data: {data}")
         try:
             from excel_model.loader import load
+
             value_cols = list(loaded_spec.inputs.value_cols.values())
             inputs = load(
                 source_path=data,
@@ -79,6 +96,7 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
             emit_info(f"  Loaded {len(inputs.df)} rows")
 
             from excel_model.validator import validate_inputs_against_spec
+
             input_errors = validate_inputs_against_spec(loaded_spec, inputs)
             if input_errors:
                 emit_error("Input data validation failed:\n" + "\n".join(f"  - {e}" for e in input_errors))
@@ -89,6 +107,7 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
     emit_info("Building workbook...")
     try:
         from excel_model.excel_writer import build_workbook
+
         build_workbook(spec=loaded_spec, inputs=inputs, output_path=output, style=loaded_style)
     except Exception as e:
         emit_error(f"Failed to build workbook: {e}")
@@ -102,12 +121,15 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
 
 @main.command()
 @click.option("--spec", required=True, type=click.Path(exists=True), help="Path to model spec YAML")
-@click.option("--data", required=False, type=click.Path(exists=True), help="Optional input data file to validate column mapping")
+@click.option(
+    "--data", required=False, type=click.Path(exists=True), help="Optional input data file to validate column mapping"
+)
 def validate(spec: str, data: str | None) -> None:
     """Validate a model spec YAML file."""
     # Load spec
     try:
         from excel_model.spec_loader import load_spec
+
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         click.echo(f"ERROR: {e}")
@@ -115,12 +137,14 @@ def validate(spec: str, data: str | None) -> None:
 
     # Validate spec
     from excel_model.validator import validate_spec
+
     errors = validate_spec(loaded_spec)
 
     # Optionally validate input data columns
     if data:
         try:
             from excel_model.loader import load
+
             value_cols = list(loaded_spec.inputs.value_cols.values())
             inputs = load(
                 source_path=data,
@@ -129,6 +153,7 @@ def validate(spec: str, data: str | None) -> None:
                 sheet=loaded_spec.inputs.sheet,
             )
             from excel_model.validator import validate_inputs_against_spec
+
             input_errors = validate_inputs_against_spec(loaded_spec, inputs)
             errors.extend(input_errors)
         except (FileNotFoundError, ValueError) as e:
@@ -150,6 +175,7 @@ def describe(spec: str, output_format: str) -> None:
     # Load spec
     try:
         from excel_model.spec_loader import load_spec
+
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         click.echo(f"ERROR: Failed to load spec: {e}", err=True)
@@ -157,10 +183,12 @@ def describe(spec: str, output_format: str) -> None:
 
     # Validate spec
     from excel_model.validator import validate_spec
+
     errors = validate_spec(loaded_spec)
 
     # Build description
     from excel_model.time_engine import generate_periods
+
     try:
         periods = generate_periods(
             start_period=loaded_spec.start_period,
