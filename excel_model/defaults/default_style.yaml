@@ -1,0 +1,12 @@
+header_fill_hex: "1F3864"
+header_font_color: "FFFFFF"
+subtotal_fill_hex: "D6E4F0"
+total_fill_hex: "AED6F1"
+history_col_fill_hex: "F2F2F2"
+section_header_fill_hex: "E8F4FD"
+font_name: "Calibri"
+font_size: 10
+number_format_currency: '#,##0'
+number_format_percent: '0.0%'
+number_format_integer: '#,##0'
+number_format_number: '#,##0.00'

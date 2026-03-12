@@ -1,0 +1,44 @@
+site_name: excel-model
+site_description: YAML-driven Excel financial model generator
+site_url: https://neuralsignal.github.io/excel-model/
+repo_url: https://github.com/neuralsignal/excel-model
+repo_name: neuralsignal/excel-model
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_source: true
+            show_root_heading: true
+
+nav:
+  - Home: index.md
+  - API Reference:
+      - Spec: api/spec.md
+      - Formula Engine: api/formula_engine.md
+      - Excel Writer: api/excel_writer.md
+      - Config: api/config.md
+      - CLI: api/cli.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - toc:
+      permalink: true

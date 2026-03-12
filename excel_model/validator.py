@@ -1,0 +1,245 @@
+"""Validation for ModelSpec and InputData."""
+import re
+
+from excel_model.formula_engine import FormulaType
+from excel_model.loader import InputData
+from excel_model.spec import ModelSpec
+
+_VALID_NAMED_RANGE_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
+
+
+_VALID_MODEL_TYPES = {"p_and_l", "dcf", "budget_vs_actuals", "scenario", "comparison", "custom"}
+_VALID_GRANULARITIES = {"monthly", "quarterly", "annual", "auto"}
+
+_REQUIRED_PARAMS: dict[str, list[str]] = {
+    "growth_projected": ["growth_assumption"],
+    "pct_of_revenue": ["revenue_key", "rate_assumption"],
+    "sum_of_rows": ["addend_keys"],
+    "subtraction": ["minuend_key", "subtrahend_key"],
+    "sum_subtraction": ["addend_key", "subtrahend_keys"],
+    "ratio": ["numerator_key", "denominator_key"],
+    "growth_rate": ["value_key"],
+    "discounted_pv": ["cashflow_key", "rate_assumption"],
+    "terminal_value": ["cashflow_key", "growth_assumption", "rate_assumption"],
+    "npv_sum": ["pv_fcf_key", "pv_terminal_key"],
+    "variance": ["plan_key", "actual_key"],
+    "variance_pct": ["plan_key", "actual_key"],
+    "constant": ["value"],
+    "custom": ["formula"],
+    "input_ref": ["projected_type"],
+    "rank": ["value_key"],
+    "index_to_base": ["value_key", "base_entity_key"],
+    "bar_chart_text": ["value_key"],
+}
+
+# Params that reference other line item keys (for cross-reference validation)
+_KEY_REF_PARAMS = {
+    "revenue_key", "minuend_key", "subtrahend_key", "addend_key",
+    "numerator_key", "denominator_key", "value_key", "cashflow_key",
+    "pv_fcf_key", "pv_terminal_key", "plan_key", "actual_key",
+    "prior_key", "base_entity_key",
+}
+_KEY_LIST_REF_PARAMS = {"addend_keys", "subtrahend_keys"}
+
+
+def validate_spec(spec: ModelSpec) -> list[str]:
+    """Return a list of error strings. Empty list means valid."""
+    errors: list[str] = []
+
+    if spec.model_type not in _VALID_MODEL_TYPES:
+        errors.append(f"Invalid model_type: {spec.model_type!r}. Must be one of {sorted(_VALID_MODEL_TYPES)}")
+
+    if not spec.title:
+        errors.append("title must not be empty")
+
+    if not spec.currency:
+        errors.append("currency must not be empty")
+
+    if spec.granularity not in _VALID_GRANULARITIES:
+        errors.append(f"Invalid granularity: {spec.granularity!r}. Must be one of {sorted(_VALID_GRANULARITIES)}")
+
+    if not spec.start_period:
+        errors.append("start_period must not be empty")
+
+    # comparison models don't require n_periods >= 1
+    if spec.model_type != "comparison" and spec.n_periods < 1:
+        errors.append(f"n_periods must be >= 1, got {spec.n_periods}")
+
+    if spec.n_history_periods < 0:
+        errors.append(f"n_history_periods must be >= 0, got {spec.n_history_periods}")
+
+    # Validate assumption names are unique
+    assumption_names = [a.name for a in spec.assumptions]
+    seen_names: set[str] = set()
+    for name in assumption_names:
+        if name in seen_names:
+            errors.append(f"Duplicate assumption name: {name!r}")
+        seen_names.add(name)
+
+    # Validate assumption names are valid Excel named range identifiers
+    for assumption in spec.assumptions:
+        if not _VALID_NAMED_RANGE_RE.match(assumption.name):
+            errors.append(
+                f"Assumption name {assumption.name!r} is not a valid Excel named range. "
+                f"Must start with a letter or underscore and contain only "
+                f"letters, digits, underscores, or periods."
+            )
+
+    # Validate driver names are unique
+    driver_names_list = [d.name for d in spec.drivers]
+    seen_driver_names: set[str] = set()
+    for name in driver_names_list:
+        if name in seen_driver_names:
+            errors.append(f"Duplicate driver name: {name!r}")
+        seen_driver_names.add(name)
+
+    # Validate driver names don't collide with assumption names
+    for name in driver_names_list:
+        if name in seen_names:
+            errors.append(
+                f"Driver name {name!r} collides with assumption name. "
+                f"Assumptions and drivers share a namespace."
+            )
+
+    # Validate driver names are valid Excel named range identifiers
+    for driver in spec.drivers:
+        if not _VALID_NAMED_RANGE_RE.match(driver.name):
+            errors.append(
+                f"Driver name {driver.name!r} is not a valid Excel named range. "
+                f"Must start with a letter or underscore and contain only "
+                f"letters, digits, underscores, or periods."
+            )
+
+    # Validate driver formats
+    valid_formats = {"number", "percent", "currency", "integer"}
+    for driver in spec.drivers:
+        if driver.format not in valid_formats:
+            errors.append(
+                f"Driver {driver.name!r} has invalid format: {driver.format!r}. "
+                f"Valid formats: {sorted(valid_formats)}"
+            )
+
+    # Validate driver_overrides keys reference actual driver names
+    driver_name_set = set(driver_names_list)
+    for scenario in spec.scenarios:
+        for key in scenario.driver_overrides:
+            if key not in driver_name_set:
+                errors.append(
+                    f"Scenario {scenario.name!r} has driver_overrides key {key!r} "
+                    f"that does not match any driver name"
+                )
+
+    # Validate line item keys are unique
+    line_item_keys = {li.key for li in spec.line_items}
+    seen_keys: set[str] = set()
+    for li in spec.line_items:
+        if li.key in seen_keys:
+            errors.append(f"Duplicate line item key: {li.key!r}")
+        seen_keys.add(li.key)
+
+    # Validate each line item's formula_type
+    valid_formula_types = {ft.value for ft in FormulaType}
+    for li in spec.line_items:
+        if li.formula_type not in valid_formula_types:
+            errors.append(
+                f"Line item {li.key!r} has unknown formula_type: {li.formula_type!r}. "
+                f"Valid types: {sorted(valid_formula_types)}"
+            )
+
+    # Validate formula_params: required params present
+    for li in spec.line_items:
+        if li.formula_type in _REQUIRED_PARAMS:
+            required = _REQUIRED_PARAMS[li.formula_type]
+            for param in required:
+                if param not in li.formula_params:
+                    errors.append(
+                        f"Line item {li.key!r} (formula_type={li.formula_type!r}) "
+                        f"missing required param {param!r}"
+                    )
+
+    # Cross-reference validation: keys referenced in formula_params must exist as line items
+    for li in spec.line_items:
+        for param_name, param_value in li.formula_params.items():
+            if param_name in _KEY_REF_PARAMS and isinstance(param_value, str) and param_value and param_value not in line_item_keys:
+                    errors.append(
+                        f"Line item {li.key!r} references unknown key {param_value!r} "
+                        f"via {param_name!r}"
+                    )
+            if param_name in _KEY_LIST_REF_PARAMS and isinstance(param_value, list):
+                for ref_key in param_value:
+                    if isinstance(ref_key, str) and ref_key not in line_item_keys:
+                        errors.append(
+                            f"Line item {li.key!r} references unknown key {ref_key!r} "
+                            f"via {param_name!r}"
+                        )
+
+    # Validate scenario model has scenarios defined
+    if spec.model_type == "scenario" and not spec.scenarios:
+        errors.append("Scenario model must have at least one scenario defined")
+
+    # Validate budget_vs_actuals has column_groups defined
+    if spec.model_type == "budget_vs_actuals" and not spec.column_groups:
+        errors.append("Budget vs Actuals model must have column_groups defined")
+
+    # Validate comparison model
+    if spec.model_type == "comparison":
+        if not spec.entities:
+            errors.append("Comparison model must have at least one entity defined")
+        entity_keys: set[str] = set()
+        for entity in spec.entities:
+            if entity.key in entity_keys:
+                errors.append(f"Duplicate entity key: {entity.key!r}")
+            entity_keys.add(entity.key)
+
+    # Validate assumption formats
+    for assumption in spec.assumptions:
+        if assumption.format not in valid_formats:
+            errors.append(
+                f"Assumption {assumption.name!r} has invalid format: {assumption.format!r}. "
+                f"Valid formats: {sorted(valid_formats)}"
+            )
+
+    # WACC ≠ TGR guard for DCF models
+    if spec.model_type == "dcf":
+        errors.extend(_validate_wacc_tgr(spec))
+
+    return errors
+
+
+def _validate_wacc_tgr(spec: ModelSpec) -> list[str]:
+    """For DCF models: ensure WACC and terminal growth rate are not equal."""
+    errors: list[str] = []
+    assumption_values = {a.name: a.value for a in spec.assumptions}
+
+    for li in spec.line_items:
+        if li.formula_type == "terminal_value":
+            rate_name = li.formula_params.get("rate_assumption")
+            growth_name = li.formula_params.get("growth_assumption")
+            if rate_name and growth_name:
+                rate_val = assumption_values.get(rate_name)
+                growth_val = assumption_values.get(growth_name)
+                if rate_val is not None and growth_val is not None and rate_val == growth_val:
+                    errors.append(
+                        f"DCF terminal value: discount rate ({rate_name}={rate_val}) "
+                        f"equals growth rate ({growth_name}={growth_val}). "
+                        f"This causes division by zero in the Gordon Growth Model."
+                    )
+    return errors
+
+
+def validate_inputs_against_spec(spec: ModelSpec, inputs: InputData) -> list[str]:
+    """Validate that InputData columns match what the spec expects. Return error list."""
+    errors: list[str] = []
+
+    if inputs.period_col not in inputs.df.columns:
+        errors.append(
+            f"period_col {inputs.period_col!r} not found in input data columns: {inputs.df.columns}"
+        )
+
+    for key, col_name in spec.inputs.value_cols.items():
+        if col_name not in inputs.df.columns:
+            errors.append(
+                f"value_col for {key!r} ({col_name!r}) not found in input data columns: {inputs.df.columns}"
+            )
+
+    return errors
