@@ -1,4 +1,5 @@
 """Tests for excel_writer.py — integration tests that write real xlsx files."""
+
 from pathlib import Path
 
 import pytest
@@ -26,10 +27,10 @@ def make_p_and_l_spec() -> ModelSpec:
         n_periods=3,
         n_history_periods=2,
         assumptions=(
-            AssumptionDef(name="RevenueGrowthRate", label="Revenue Growth Rate",
-                          value=0.10, format="percent", group="Growth"),
-            AssumptionDef(name="COGSMargin", label="COGS Margin",
-                          value=0.45, format="percent", group="Margins"),
+            AssumptionDef(
+                name="RevenueGrowthRate", label="Revenue Growth Rate", value=0.10, format="percent", group="Growth"
+            ),
+            AssumptionDef(name="COGSMargin", label="COGS Margin", value=0.45, format="percent", group="Margins"),
         ),
         line_items=(
             LineItemDef(
@@ -37,21 +38,30 @@ def make_p_and_l_spec() -> ModelSpec:
                 label="Revenue",
                 formula_type="growth_projected",
                 formula_params={"growth_assumption": "RevenueGrowthRate"},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
             LineItemDef(
                 key="cogs",
                 label="  COGS",
                 formula_type="pct_of_revenue",
                 formula_params={"revenue_key": "revenue", "rate_assumption": "COGSMargin"},
-                is_subtotal=False, is_total=False, section="Cost", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Cost",
+                format="",
             ),
             LineItemDef(
                 key="gross_profit",
                 label="Gross Profit",
                 formula_type="subtraction",
                 formula_params={"minuend_key": "revenue", "subtrahend_key": "cogs"},
-                is_subtotal=True, is_total=False, section="Profit", format="",
+                is_subtotal=True,
+                is_total=False,
+                section="Profit",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="Test", date="2026-01-01", version="1.0"),
@@ -132,16 +142,17 @@ class TestBuildWorkbook:
             start_period="2025",
             n_periods=5,
             n_history_periods=0,
-            assumptions=(
-                AssumptionDef(name="WACC", label="WACC", value=0.10, format="percent", group="Valuation"),
-            ),
+            assumptions=(AssumptionDef(name="WACC", label="WACC", value=0.10, format="percent", group="Valuation"),),
             line_items=(
                 LineItemDef(
                     key="revenue",
                     label="Revenue",
                     formula_type="growth_projected",
                     formula_params={"growth_assumption": "WACC"},
-                    is_subtotal=False, is_total=False, section="Income", format="",
+                    is_subtotal=False,
+                    is_total=False,
+                    section="Income",
+                    format="",
                 ),
             ),
             metadata=MetadataDef(preparer="", date="", version="1.0"),
@@ -167,8 +178,9 @@ class TestBuildWorkbook:
             n_periods=3,
             n_history_periods=0,
             assumptions=(
-                AssumptionDef(name="RevenueGrowthRate", label="Rev Growth",
-                              value=0.10, format="percent", group="Growth"),
+                AssumptionDef(
+                    name="RevenueGrowthRate", label="Rev Growth", value=0.10, format="percent", group="Growth"
+                ),
             ),
             line_items=(
                 LineItemDef(
@@ -176,14 +188,21 @@ class TestBuildWorkbook:
                     label="Revenue",
                     formula_type="growth_projected",
                     formula_params={"growth_assumption": "RevenueGrowthRate"},
-                    is_subtotal=False, is_total=False, section="Revenue", format="",
+                    is_subtotal=False,
+                    is_total=False,
+                    section="Revenue",
+                    format="",
                 ),
             ),
             metadata=MetadataDef(preparer="", date="", version="1.0"),
             scenarios=(
                 ScenarioDef(name="base", label="Base Case", assumption_overrides={}, driver_overrides={}),
-                ScenarioDef(name="bull", label="Bull Case",
-                            assumption_overrides={"RevenueGrowthRate": 0.20}, driver_overrides={}),
+                ScenarioDef(
+                    name="bull",
+                    label="Bull Case",
+                    assumption_overrides={"RevenueGrowthRate": 0.20},
+                    driver_overrides={},
+                ),
             ),
             column_groups=(),
             inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),

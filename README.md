@@ -1,8 +1,13 @@
 # excel-model
 
+[![CI](https://github.com/neuralsignal/excel-model/actions/workflows/ci.yml/badge.svg)](https://github.com/neuralsignal/excel-model/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 YAML-driven Excel financial model generator.
 
 Build professional financial models (P&L, DCF, Budget vs Actuals, Scenario Analysis) from declarative YAML specs. Generates `.xlsx` workbooks with named ranges, styled sheets, and Excel formulas using openpyxl.
+
+**[Documentation](https://neuralsignal.github.io/excel-model/)**
 
 ## Installation
 
@@ -73,6 +78,20 @@ font_size: 10
 number_format_currency: '#,##0'
 number_format_percent: '0.0%'
 ```
+
+## Looking for Financial Modeling Input
+
+This library was built by a software engineer, not a financial analyst. The model structures, formula types, and default assumptions reflect a developer's interpretation of common financial models.
+
+If you work in finance, FP&A, investment banking, or accounting, your input would be incredibly valuable:
+
+- **Are the formula types correct?** Do `growth_projected`, `pct_of_revenue`, `discounted_pv`, and `terminal_value` follow standard conventions?
+- **Missing model patterns?** Are there common financial model structures (e.g., waterfall, three-statement, LBO) that should be supported?
+- **Named range conventions** -- do the Excel named range naming patterns match what analysts expect?
+- **Number formatting** -- are the default currency/percent/integer formats appropriate for professional models?
+- **Scenario analysis** -- does the base/bull/bear override pattern match how scenarios are typically structured?
+
+Please open an [issue](https://github.com/neuralsignal/excel-model/issues) with the `type:feat` label, or start a discussion. All feedback is welcome, from quick corrections to detailed model reviews.
 
 ## License
 

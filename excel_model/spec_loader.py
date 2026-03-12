@@ -3,6 +3,7 @@
 Uses strictyaml for validated parsing (raises StrictYAMLError with line/col on
 schema violations) and dacite for dataclass construction.
 """
+
 from pathlib import Path
 from typing import Any
 
@@ -114,24 +115,12 @@ def load_spec(path: str) -> ModelSpec:
     validated = syaml_load(text, SPEC_SCHEMA)
     data: dict[str, Any] = validated.data
 
-    assumptions = tuple(
-        _build_assumption(a) for a in (data.get("assumptions") or [])
-    )
-    drivers = tuple(
-        _build_driver(d) for d in (data.get("drivers") or [])
-    )
-    line_items = tuple(
-        _build_line_item(li) for li in (data.get("line_items") or [])
-    )
-    scenarios = tuple(
-        _build_scenario(s) for s in (data.get("scenarios") or [])
-    )
-    column_groups = tuple(
-        _build_column_group(cg) for cg in (data.get("column_groups") or [])
-    )
-    entities = tuple(
-        _build_entity(e) for e in (data.get("entities") or [])
-    )
+    assumptions = tuple(_build_assumption(a) for a in (data.get("assumptions") or []))
+    drivers = tuple(_build_driver(d) for d in (data.get("drivers") or []))
+    line_items = tuple(_build_line_item(li) for li in (data.get("line_items") or []))
+    scenarios = tuple(_build_scenario(s) for s in (data.get("scenarios") or []))
+    column_groups = tuple(_build_column_group(cg) for cg in (data.get("column_groups") or []))
+    entities = tuple(_build_entity(e) for e in (data.get("entities") or []))
     inputs = _build_inputs(data.get("inputs"))
     metadata = _build_metadata(data.get("metadata"))
 

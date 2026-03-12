@@ -1,4 +1,5 @@
 """Multi-format data loader: xlsx/csv/parquet/json/yaml/md → InputData."""
+
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,7 +10,7 @@ import yaml
 
 @dataclass(frozen=True)
 class InputData:
-    df: pl.DataFrame        # Columns: period_col + value_cols
+    df: pl.DataFrame  # Columns: period_col + value_cols
     period_col: str
     value_cols: list[str]
 
@@ -79,8 +80,7 @@ def _load_markdown_table(source_path: str) -> pl.DataFrame:
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
         if len(cells) != len(headers):
             raise ValueError(
-                f"Malformed markdown table row (expected {len(headers)} columns, "
-                f"got {len(cells)}): {line!r}"
+                f"Malformed markdown table row (expected {len(headers)} columns, got {len(cells)}): {line!r}"
             )
         rows.append(dict(zip(headers, cells, strict=True)))
 
@@ -104,8 +104,5 @@ def load(
     required_cols = [period_col] + value_cols
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
-        raise ValueError(
-            f"Input data missing required columns: {missing}. "
-            f"Available columns: {df.columns}"
-        )
+        raise ValueError(f"Input data missing required columns: {missing}. Available columns: {df.columns}")
     return InputData(df=df, period_col=period_col, value_cols=value_cols)

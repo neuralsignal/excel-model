@@ -1,4 +1,5 @@
 """Orchestrator: build_workbook() — creates the full Excel workbook."""
+
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -28,6 +29,7 @@ def build_workbook(
     if spec.model_type == "comparison":
         # Comparison models don't use time_engine periods
         from excel_model.models.comparison import build_comparison
+
         build_comparison(wb, spec, inputs, style)
     else:
         periods = generate_periods(
@@ -39,22 +41,27 @@ def build_workbook(
 
         if spec.model_type == "p_and_l":
             from excel_model.models.p_and_l import build_p_and_l
+
             build_p_and_l(wb, spec, inputs, style, periods)
 
         elif spec.model_type == "dcf":
             from excel_model.models.dcf import build_dcf
+
             build_dcf(wb, spec, inputs, style, periods)
 
         elif spec.model_type == "budget_vs_actuals":
             from excel_model.models.budget_vs_actuals import build_budget_vs_actuals
+
             build_budget_vs_actuals(wb, spec, inputs, style, periods)
 
         elif spec.model_type == "scenario":
             from excel_model.models.scenario import build_scenario
+
             build_scenario(wb, spec, inputs, style, periods)
 
         elif spec.model_type == "custom":
             from excel_model.models.p_and_l import build_p_and_l
+
             build_p_and_l(wb, spec, inputs, style, periods)
 
         else:

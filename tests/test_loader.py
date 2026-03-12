@@ -1,4 +1,5 @@
 """Tests for loader.py."""
+
 import json
 
 import polars as pl
@@ -80,10 +81,6 @@ class TestLoadMarkdownTable:
 
     def test_load_md_through_load(self, tmp_path):
         md_file = tmp_path / "data.md"
-        md_file.write_text(
-            "| period | revenue |\n"
-            "|----|----|\n"
-            "| 2023 | 1000 |\n"
-        )
+        md_file.write_text("| period | revenue |\n|----|----|\n| 2023 | 1000 |\n")
         result = load(str(md_file), "period", ["revenue"], "")
         assert len(result.df) == 1

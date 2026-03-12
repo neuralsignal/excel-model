@@ -1,4 +1,5 @@
 """Configuration loading with bundled defaults and deep-merge."""
+
 from importlib import resources
 from pathlib import Path
 
@@ -44,10 +45,18 @@ def load_style(style_path: str | None) -> StyleConfig:
         merged = defaults
 
     required = [
-        "header_fill_hex", "header_font_color", "subtotal_fill_hex", "total_fill_hex",
-        "history_col_fill_hex", "section_header_fill_hex", "font_name", "font_size",
-        "number_format_currency", "number_format_percent",
-        "number_format_integer", "number_format_number",
+        "header_fill_hex",
+        "header_font_color",
+        "subtotal_fill_hex",
+        "total_fill_hex",
+        "history_col_fill_hex",
+        "section_header_fill_hex",
+        "font_name",
+        "font_size",
+        "number_format_currency",
+        "number_format_percent",
+        "number_format_integer",
+        "number_format_number",
     ]
     missing = [k for k in required if k not in merged]
     if missing:

@@ -1,18 +1,29 @@
 """Period generation, auto-detect granularity, label formatting."""
+
 import re
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class Period:
-    label: str          # Display label: "2025", "Q1 2025", "Jan 2025"
-    index: int          # 0-based position among all periods (history + projection)
+    label: str  # Display label: "2025", "Q1 2025", "Jan 2025"
+    index: int  # 0-based position among all periods (history + projection)
     is_history: bool
 
 
 _MONTH_NAMES = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
 ]
 
 

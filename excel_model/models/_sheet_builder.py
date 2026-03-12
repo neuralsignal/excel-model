@@ -1,4 +1,5 @@
 """Shared utilities for building Assumptions and Inputs sheets."""
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
@@ -236,9 +237,7 @@ def build_inputs_sheet(
         for col_idx, period in enumerate(history_periods, start=2):
             period_val = None
             if inputs.period_col in inputs.df.columns and source_col in inputs.df.columns:
-                rows_for_period = inputs.df.filter(
-                    inputs.df[inputs.period_col] == period.label
-                )
+                rows_for_period = inputs.df.filter(inputs.df[inputs.period_col] == period.label)
                 if len(rows_for_period) > 0:
                     period_val = rows_for_period[source_col][0]
             cell = ws.cell(row=current_row, column=col_idx, value=period_val)

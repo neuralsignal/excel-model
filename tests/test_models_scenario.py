@@ -1,4 +1,5 @@
 """Tests for Scenario model builder."""
+
 import pytest
 from openpyxl import Workbook
 
@@ -45,24 +46,29 @@ def scenario_spec():
         n_periods=3,
         n_history_periods=0,
         assumptions=(
-            AssumptionDef(name="RevenueGrowthRate", label="Rev Growth",
-                          value=0.10, format="percent", group="Growth"),
+            AssumptionDef(name="RevenueGrowthRate", label="Rev Growth", value=0.10, format="percent", group="Growth"),
         ),
         line_items=(
             LineItemDef(
-                key="revenue", label="Revenue",
+                key="revenue",
+                label="Revenue",
                 formula_type="growth_projected",
                 formula_params={"growth_assumption": "RevenueGrowthRate"},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="", date="", version="1.0"),
         scenarios=(
             ScenarioDef(name="base", label="Base Case", assumption_overrides={}, driver_overrides={}),
-            ScenarioDef(name="bull", label="Bull Case",
-                        assumption_overrides={"RevenueGrowthRate": 0.20}, driver_overrides={}),
-            ScenarioDef(name="bear", label="Bear Case",
-                        assumption_overrides={"RevenueGrowthRate": 0.02}, driver_overrides={}),
+            ScenarioDef(
+                name="bull", label="Bull Case", assumption_overrides={"RevenueGrowthRate": 0.20}, driver_overrides={}
+            ),
+            ScenarioDef(
+                name="bear", label="Bear Case", assumption_overrides={"RevenueGrowthRate": 0.02}, driver_overrides={}
+            ),
         ),
         column_groups=(),
         inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
@@ -122,24 +128,27 @@ def test_scenario_custom_formulas_use_prefixed_names(style):
         n_periods=2,
         n_history_periods=0,
         assumptions=(
-            AssumptionDef(name="PatientCount", label="Patient Count",
-                          value=500, format="integer", group="Volume"),
-            AssumptionDef(name="PricePerPatient", label="Price/Patient",
-                          value=100, format="currency", group="Pricing"),
+            AssumptionDef(name="PatientCount", label="Patient Count", value=500, format="integer", group="Volume"),
+            AssumptionDef(name="PricePerPatient", label="Price/Patient", value=100, format="currency", group="Pricing"),
         ),
         line_items=(
             LineItemDef(
-                key="total_revenue", label="Total Revenue",
+                key="total_revenue",
+                label="Total Revenue",
                 formula_type="custom",
                 formula_params={"formula": "=PatientCount*PricePerPatient"},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="", date="", version="1.0"),
         scenarios=(
             ScenarioDef(name="standard", label="Standard", assumption_overrides={}, driver_overrides={}),
-            ScenarioDef(name="premium", label="Premium",
-                        assumption_overrides={"PricePerPatient": 200}, driver_overrides={}),
+            ScenarioDef(
+                name="premium", label="Premium", assumption_overrides={"PricePerPatient": 200}, driver_overrides={}
+            ),
         ),
         column_groups=(),
         inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
@@ -163,8 +172,9 @@ def test_scenario_custom_formulas_use_prefixed_names(style):
     assert formulas, "Expected at least one formula in Model sheet"
     # Every formula referencing PatientCount should have a prefix
     for f in formulas:
-        assert "PatientCount" not in f or "StandardPatientCount" in f or "PremiumPatientCount" in f, \
+        assert "PatientCount" not in f or "StandardPatientCount" in f or "PremiumPatientCount" in f, (
             f"Formula contains unprefixed PatientCount: {f}"
+        )
     # At least one Standard and one Premium prefixed name
     assert any("StandardPatientCount" in f for f in formulas)
     assert any("PremiumPatientCount" in f for f in formulas)
@@ -198,36 +208,42 @@ def _make_driver_spec(style_fixture_unused=None):
         n_periods=1,
         n_history_periods=0,
         assumptions=(
-            AssumptionDef(name="CROPerPatient", label="CRO Per Patient",
-                          value=2992, format="currency", group="Benchmarks"),
+            AssumptionDef(
+                name="CROPerPatient", label="CRO Per Patient", value=2992, format="currency", group="Benchmarks"
+            ),
         ),
         drivers=(
-            DriverDef(name="PatientCount", label="Patient Count",
-                      value=2500, format="integer", group="Volume"),
-            DriverDef(name="PerPatientPrice", label="Price/Patient",
-                      value=40, format="currency", group="Pricing"),
+            DriverDef(name="PatientCount", label="Patient Count", value=2500, format="integer", group="Volume"),
+            DriverDef(name="PerPatientPrice", label="Price/Patient", value=40, format="currency", group="Pricing"),
         ),
         line_items=(
             LineItemDef(
-                key="data_revenue", label="Data Revenue",
+                key="data_revenue",
+                label="Data Revenue",
                 formula_type="custom",
                 formula_params={"formula": "=PatientCount*PerPatientPrice"},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
             LineItemDef(
-                key="vs_cro", label="vs CRO",
+                key="vs_cro",
+                label="vs CRO",
                 formula_type="custom",
                 formula_params={"formula": "=${col_letter}${data_revenue_row}/PatientCount/CROPerPatient"},
-                is_subtotal=False, is_total=False, section="Positioning", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Positioning",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="", date="", version="1.0"),
         scenarios=(
-            ScenarioDef(name="standard", label="Standard",
-                        assumption_overrides={}, driver_overrides={}),
-            ScenarioDef(name="premium", label="Premium",
-                        assumption_overrides={},
-                        driver_overrides={"PerPatientPrice": 180}),
+            ScenarioDef(name="standard", label="Standard", assumption_overrides={}, driver_overrides={}),
+            ScenarioDef(
+                name="premium", label="Premium", assumption_overrides={}, driver_overrides={"PerPatientPrice": 180}
+            ),
         ),
         column_groups=(),
         inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
@@ -324,25 +340,24 @@ class TestScenarioWithDrivers:
             start_period="2025",
             n_periods=2,
             n_history_periods=0,
-            assumptions=(
-                AssumptionDef(name="Growth", label="Growth",
-                              value=0.10, format="percent", group="G"),
-            ),
+            assumptions=(AssumptionDef(name="Growth", label="Growth", value=0.10, format="percent", group="G"),),
             drivers=(),  # empty = legacy
             line_items=(
                 LineItemDef(
-                    key="rev", label="Revenue",
+                    key="rev",
+                    label="Revenue",
                     formula_type="growth_projected",
                     formula_params={"growth_assumption": "Growth"},
-                    is_subtotal=False, is_total=False, section="Rev", format="",
+                    is_subtotal=False,
+                    is_total=False,
+                    section="Rev",
+                    format="",
                 ),
             ),
             metadata=MetadataDef(preparer="", date="", version="1.0"),
             scenarios=(
-                ScenarioDef(name="base", label="Base",
-                            assumption_overrides={}, driver_overrides={}),
-                ScenarioDef(name="bull", label="Bull",
-                            assumption_overrides={"Growth": 0.20}, driver_overrides={}),
+                ScenarioDef(name="base", label="Base", assumption_overrides={}, driver_overrides={}),
+                ScenarioDef(name="bull", label="Bull", assumption_overrides={"Growth": 0.20}, driver_overrides={}),
             ),
             column_groups=(),
             inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),

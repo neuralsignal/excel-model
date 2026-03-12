@@ -1,4 +1,5 @@
 """StyleConfig dataclass and openpyxl cell applier functions."""
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,10 +31,18 @@ def load_style_config(path: str) -> StyleConfig:
     with p.open() as f:
         data = yaml.safe_load(f)
     required = [
-        "header_fill_hex", "header_font_color", "subtotal_fill_hex", "total_fill_hex",
-        "history_col_fill_hex", "section_header_fill_hex", "font_name", "font_size",
-        "number_format_currency", "number_format_percent",
-        "number_format_integer", "number_format_number",
+        "header_fill_hex",
+        "header_font_color",
+        "subtotal_fill_hex",
+        "total_fill_hex",
+        "history_col_fill_hex",
+        "section_header_fill_hex",
+        "font_name",
+        "font_size",
+        "number_format_currency",
+        "number_format_percent",
+        "number_format_integer",
+        "number_format_number",
     ]
     missing = [k for k in required if k not in data]
     if missing:

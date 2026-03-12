@@ -1,4 +1,5 @@
 """Tests for validator.py."""
+
 import polars as pl
 
 from excel_model.loader import InputData
@@ -76,18 +77,44 @@ class TestValidateSpec:
 
     def test_duplicate_line_item_keys(self):
         dup = (
-            LineItemDef(key="revenue", label="Revenue", formula_type="constant", formula_params={"value": 1},
-                        is_subtotal=False, is_total=False, section="", format=""),
-            LineItemDef(key="revenue", label="Revenue 2", formula_type="constant", formula_params={"value": 2},
-                        is_subtotal=False, is_total=False, section="", format=""),
+            LineItemDef(
+                key="revenue",
+                label="Revenue",
+                formula_type="constant",
+                formula_params={"value": 1},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+            LineItemDef(
+                key="revenue",
+                label="Revenue 2",
+                formula_type="constant",
+                formula_params={"value": 2},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
         )
         spec = make_minimal_spec(line_items=dup)
         errors = validate_spec(spec)
         assert any("Duplicate line item" in e for e in errors)
 
     def test_unknown_formula_type(self):
-        li = (LineItemDef(key="x", label="X", formula_type="nonexistent", formula_params={},
-                          is_subtotal=False, is_total=False, section="", format=""),)
+        li = (
+            LineItemDef(
+                key="x",
+                label="X",
+                formula_type="nonexistent",
+                formula_params={},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+        )
         spec = make_minimal_spec(line_items=li)
         errors = validate_spec(spec)
         assert any("formula_type" in e for e in errors)

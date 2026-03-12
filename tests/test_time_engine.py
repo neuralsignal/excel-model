@@ -1,4 +1,5 @@
 """Tests for time_engine.py."""
+
 import pytest
 
 from excel_model.time_engine import detect_granularity, generate_periods

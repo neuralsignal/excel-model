@@ -1,4 +1,5 @@
 """Tests for DCF model builder."""
+
 import pytest
 from openpyxl import Workbook
 
@@ -45,32 +46,50 @@ def dcf_spec():
         assumptions=(
             AssumptionDef(name="WACC", label="Discount Rate", value=0.10, format="percent", group="Valuation"),
             AssumptionDef(name="TGR", label="Terminal Growth Rate", value=0.02, format="percent", group="Valuation"),
-            AssumptionDef(name="RevenueGrowthRate", label="Revenue Growth", value=0.10, format="percent", group="Growth"),
+            AssumptionDef(
+                name="RevenueGrowthRate", label="Revenue Growth", value=0.10, format="percent", group="Growth"
+            ),
         ),
         line_items=(
             LineItemDef(
-                key="revenue", label="Revenue",
+                key="revenue",
+                label="Revenue",
                 formula_type="growth_projected",
                 formula_params={"growth_assumption": "RevenueGrowthRate"},
-                is_subtotal=False, is_total=False, section="Income", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Income",
+                format="",
             ),
             LineItemDef(
-                key="fcf", label="Free Cash Flow",
+                key="fcf",
+                label="Free Cash Flow",
                 formula_type="constant",
                 formula_params={"value": 0},
-                is_subtotal=True, is_total=False, section="FCF", format="",
+                is_subtotal=True,
+                is_total=False,
+                section="FCF",
+                format="",
             ),
             LineItemDef(
-                key="pv_fcf", label="PV of FCF",
+                key="pv_fcf",
+                label="PV of FCF",
                 formula_type="discounted_pv",
                 formula_params={"cashflow_key": "fcf", "rate_assumption": "WACC"},
-                is_subtotal=False, is_total=False, section="Valuation", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Valuation",
+                format="",
             ),
             LineItemDef(
-                key="terminal_value", label="Terminal Value",
+                key="terminal_value",
+                label="Terminal Value",
                 formula_type="terminal_value",
                 formula_params={"cashflow_key": "fcf", "growth_assumption": "TGR", "rate_assumption": "WACC"},
-                is_subtotal=False, is_total=False, section="Valuation", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Valuation",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="", date="", version="1.0"),

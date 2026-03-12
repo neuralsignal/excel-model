@@ -1,4 +1,5 @@
 """Register assumption cells as Excel named ranges using openpyxl."""
+
 from openpyxl import Workbook
 from openpyxl.workbook.defined_name import DefinedName
 

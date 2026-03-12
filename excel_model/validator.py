@@ -1,4 +1,5 @@
 """Validation for ModelSpec and InputData."""
+
 import re
 
 from excel_model.formula_engine import FormulaType
@@ -34,10 +35,20 @@ _REQUIRED_PARAMS: dict[str, list[str]] = {
 
 # Params that reference other line item keys (for cross-reference validation)
 _KEY_REF_PARAMS = {
-    "revenue_key", "minuend_key", "subtrahend_key", "addend_key",
-    "numerator_key", "denominator_key", "value_key", "cashflow_key",
-    "pv_fcf_key", "pv_terminal_key", "plan_key", "actual_key",
-    "prior_key", "base_entity_key",
+    "revenue_key",
+    "minuend_key",
+    "subtrahend_key",
+    "addend_key",
+    "numerator_key",
+    "denominator_key",
+    "value_key",
+    "cashflow_key",
+    "pv_fcf_key",
+    "pv_terminal_key",
+    "plan_key",
+    "actual_key",
+    "prior_key",
+    "base_entity_key",
 }
 _KEY_LIST_REF_PARAMS = {"addend_keys", "subtrahend_keys"}
 
@@ -97,8 +108,7 @@ def validate_spec(spec: ModelSpec) -> list[str]:
     for name in driver_names_list:
         if name in seen_names:
             errors.append(
-                f"Driver name {name!r} collides with assumption name. "
-                f"Assumptions and drivers share a namespace."
+                f"Driver name {name!r} collides with assumption name. Assumptions and drivers share a namespace."
             )
 
     # Validate driver names are valid Excel named range identifiers
@@ -115,8 +125,7 @@ def validate_spec(spec: ModelSpec) -> list[str]:
     for driver in spec.drivers:
         if driver.format not in valid_formats:
             errors.append(
-                f"Driver {driver.name!r} has invalid format: {driver.format!r}. "
-                f"Valid formats: {sorted(valid_formats)}"
+                f"Driver {driver.name!r} has invalid format: {driver.format!r}. Valid formats: {sorted(valid_formats)}"
             )
 
     # Validate driver_overrides keys reference actual driver names
@@ -125,8 +134,7 @@ def validate_spec(spec: ModelSpec) -> list[str]:
         for key in scenario.driver_overrides:
             if key not in driver_name_set:
                 errors.append(
-                    f"Scenario {scenario.name!r} has driver_overrides key {key!r} "
-                    f"that does not match any driver name"
+                    f"Scenario {scenario.name!r} has driver_overrides key {key!r} that does not match any driver name"
                 )
 
     # Validate line item keys are unique
@@ -153,25 +161,23 @@ def validate_spec(spec: ModelSpec) -> list[str]:
             for param in required:
                 if param not in li.formula_params:
                     errors.append(
-                        f"Line item {li.key!r} (formula_type={li.formula_type!r}) "
-                        f"missing required param {param!r}"
+                        f"Line item {li.key!r} (formula_type={li.formula_type!r}) missing required param {param!r}"
                     )
 
     # Cross-reference validation: keys referenced in formula_params must exist as line items
     for li in spec.line_items:
         for param_name, param_value in li.formula_params.items():
-            if param_name in _KEY_REF_PARAMS and isinstance(param_value, str) and param_value and param_value not in line_item_keys:
-                    errors.append(
-                        f"Line item {li.key!r} references unknown key {param_value!r} "
-                        f"via {param_name!r}"
-                    )
+            if (
+                param_name in _KEY_REF_PARAMS
+                and isinstance(param_value, str)
+                and param_value
+                and param_value not in line_item_keys
+            ):
+                errors.append(f"Line item {li.key!r} references unknown key {param_value!r} via {param_name!r}")
             if param_name in _KEY_LIST_REF_PARAMS and isinstance(param_value, list):
                 for ref_key in param_value:
                     if isinstance(ref_key, str) and ref_key not in line_item_keys:
-                        errors.append(
-                            f"Line item {li.key!r} references unknown key {ref_key!r} "
-                            f"via {param_name!r}"
-                        )
+                        errors.append(f"Line item {li.key!r} references unknown key {ref_key!r} via {param_name!r}")
 
     # Validate scenario model has scenarios defined
     if spec.model_type == "scenario" and not spec.scenarios:
@@ -232,14 +238,10 @@ def validate_inputs_against_spec(spec: ModelSpec, inputs: InputData) -> list[str
     errors: list[str] = []
 
     if inputs.period_col not in inputs.df.columns:
-        errors.append(
-            f"period_col {inputs.period_col!r} not found in input data columns: {inputs.df.columns}"
-        )
+        errors.append(f"period_col {inputs.period_col!r} not found in input data columns: {inputs.df.columns}")
 
     for key, col_name in spec.inputs.value_cols.items():
         if col_name not in inputs.df.columns:
-            errors.append(
-                f"value_col for {key!r} ({col_name!r}) not found in input data columns: {inputs.df.columns}"
-            )
+            errors.append(f"value_col for {key!r} ({col_name!r}) not found in input data columns: {inputs.df.columns}")
 
     return errors

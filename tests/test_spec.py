@@ -1,4 +1,5 @@
 """Tests for spec.py dataclasses."""
+
 from dataclasses import FrozenInstanceError
 
 import pytest
@@ -41,7 +42,8 @@ def test_line_item_def_creation():
         formula_params={"growth_assumption": "RevenueGrowthRate"},
         is_subtotal=False,
         is_total=False,
-        section="Revenue", format="",
+        section="Revenue",
+        format="",
     )
     assert li.key == "revenue"
     assert li.formula_type == "growth_projected"
@@ -51,8 +53,16 @@ def test_line_item_def_creation():
 
 
 def test_line_item_def_frozen():
-    li = LineItemDef(key="k", label="L", formula_type="constant", formula_params={},
-                     is_subtotal=False, is_total=False, section="", format="")
+    li = LineItemDef(
+        key="k",
+        label="L",
+        formula_type="constant",
+        formula_params={},
+        is_subtotal=False,
+        is_total=False,
+        section="",
+        format="",
+    )
     with pytest.raises(FrozenInstanceError):
         li.key = "new"  # type: ignore
 

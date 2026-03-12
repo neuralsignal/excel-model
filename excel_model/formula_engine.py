@@ -1,4 +1,5 @@
 """FormulaType enum and render_formula() — produces Excel formula strings."""
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -28,19 +29,20 @@ class FormulaType(Enum):
 @dataclass(frozen=True)
 class CellContext:
     """Everything formula_engine needs to know about the current cell position."""
-    period_index: int           # 0-based index among all periods (history + projection)
-    n_history: int              # number of history periods
-    row: int                    # 1-based Excel row of this cell
-    col: int                    # 1-based Excel column of this cell
-    col_letter: str             # e.g., "C"
-    prior_col_letter: str       # col_letter of period_index - 1 (empty string if first)
-    named_ranges: dict[str, str]        # assumption_name → Excel named range name
-    row_map: dict[str, int]             # line_item_key → Excel row number (Model sheet)
-    inputs_row_map: dict[str, int]      # line_item_key → Inputs sheet row number
-    scenario_prefix: str                # e.g., "Bull" for scenario models
-    first_proj_col_letter: str          # e.g., "D" — first projection column
-    last_proj_col_letter: str           # e.g., "H" — last projection column
-    entity_col_range: str               # e.g., "$B$5:$H$5" — full row range for RANK/MAX formulas
+
+    period_index: int  # 0-based index among all periods (history + projection)
+    n_history: int  # number of history periods
+    row: int  # 1-based Excel row of this cell
+    col: int  # 1-based Excel column of this cell
+    col_letter: str  # e.g., "C"
+    prior_col_letter: str  # col_letter of period_index - 1 (empty string if first)
+    named_ranges: dict[str, str]  # assumption_name → Excel named range name
+    row_map: dict[str, int]  # line_item_key → Excel row number (Model sheet)
+    inputs_row_map: dict[str, int]  # line_item_key → Inputs sheet row number
+    scenario_prefix: str  # e.g., "Bull" for scenario models
+    first_proj_col_letter: str  # e.g., "D" — first projection column
+    last_proj_col_letter: str  # e.g., "H" — last projection column
+    entity_col_range: str  # e.g., "$B$5:$H$5" — full row range for RANK/MAX formulas
     driver_names: frozenset[str] = frozenset()  # when non-empty, only these names get scenario-prefixed
 
 
@@ -118,8 +120,7 @@ def render_formula(
         else:
             # Route to projected_type
             projected_type = formula_params["projected_type"]
-            projected_params = {k: v for k, v in formula_params.items()
-                                if k not in ("projected_type",)}
+            projected_params = {k: v for k, v in formula_params.items() if k not in ("projected_type",)}
             return render_formula(projected_type, projected_params, ctx)
 
     if ft == FormulaType.GROWTH_PROJECTED:
@@ -234,6 +235,7 @@ def render_formula(
         # Use regex word-boundary matching to avoid substring corruption
         if ctx.scenario_prefix:
             import re
+
             # Determine which names to prefix
             if ctx.driver_names:
                 # New mode: only prefix driver names

@@ -1,4 +1,5 @@
 """Scenario Analysis sheet builder — side-by-side column groups."""
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter

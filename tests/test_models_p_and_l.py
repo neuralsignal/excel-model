@@ -1,4 +1,5 @@
 """Tests for P&L model builder."""
+
 import pytest
 from openpyxl import Workbook
 
@@ -43,29 +44,41 @@ def p_and_l_spec():
         n_periods=3,
         n_history_periods=2,
         assumptions=(
-            AssumptionDef(name="RevenueGrowthRate", label="Revenue Growth Rate",
-                          value=0.10, format="percent", group="Growth"),
-            AssumptionDef(name="COGSMargin", label="COGS Margin",
-                          value=0.45, format="percent", group="Margins"),
+            AssumptionDef(
+                name="RevenueGrowthRate", label="Revenue Growth Rate", value=0.10, format="percent", group="Growth"
+            ),
+            AssumptionDef(name="COGSMargin", label="COGS Margin", value=0.45, format="percent", group="Margins"),
         ),
         line_items=(
             LineItemDef(
-                key="revenue", label="Revenue",
+                key="revenue",
+                label="Revenue",
                 formula_type="growth_projected",
                 formula_params={"growth_assumption": "RevenueGrowthRate"},
-                is_subtotal=False, is_total=False, section="Revenue", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Revenue",
+                format="",
             ),
             LineItemDef(
-                key="cogs", label="  COGS",
+                key="cogs",
+                label="  COGS",
                 formula_type="pct_of_revenue",
                 formula_params={"revenue_key": "revenue", "rate_assumption": "COGSMargin"},
-                is_subtotal=False, is_total=False, section="Cost", format="",
+                is_subtotal=False,
+                is_total=False,
+                section="Cost",
+                format="",
             ),
             LineItemDef(
-                key="gross_profit", label="Gross Profit",
+                key="gross_profit",
+                label="Gross Profit",
                 formula_type="subtraction",
                 formula_params={"minuend_key": "revenue", "subtrahend_key": "cogs"},
-                is_subtotal=True, is_total=False, section="Profit", format="",
+                is_subtotal=True,
+                is_total=False,
+                section="Profit",
+                format="",
             ),
         ),
         metadata=MetadataDef(preparer="", date="", version="1.0"),
