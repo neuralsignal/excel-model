@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+from openpyxl.cell.cell import Cell
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.worksheet.worksheet import Worksheet
 
 
 @dataclass(frozen=True)
@@ -83,7 +85,7 @@ def _top_border() -> Border:
     return Border(top=thin)
 
 
-def apply_header_style(cell, config: StyleConfig) -> None:
+def apply_header_style(cell: Cell, config: StyleConfig) -> None:
     cell.fill = _make_fill(config.header_fill_hex)
     cell.font = Font(
         name=config.font_name,
@@ -94,33 +96,33 @@ def apply_header_style(cell, config: StyleConfig) -> None:
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def apply_subtotal_style(cell, config: StyleConfig) -> None:
+def apply_subtotal_style(cell: Cell, config: StyleConfig) -> None:
     cell.fill = _make_fill(config.subtotal_fill_hex)
     cell.font = Font(name=config.font_name, size=config.font_size, bold=True)
     cell.border = _top_border()
 
 
-def apply_total_style(cell, config: StyleConfig) -> None:
+def apply_total_style(cell: Cell, config: StyleConfig) -> None:
     cell.fill = _make_fill(config.total_fill_hex)
     cell.font = Font(name=config.font_name, size=config.font_size, bold=True)
     cell.border = _double_border()
 
 
-def apply_section_header_style(cell, config: StyleConfig) -> None:
+def apply_section_header_style(cell: Cell, config: StyleConfig) -> None:
     cell.fill = _make_fill(config.section_header_fill_hex)
     cell.font = Font(name=config.font_name, size=config.font_size, bold=True, italic=True)
 
 
-def apply_history_col_style(cell, config: StyleConfig) -> None:
+def apply_history_col_style(cell: Cell, config: StyleConfig) -> None:
     cell.fill = _make_fill(config.history_col_fill_hex)
 
 
-def apply_normal_style(cell, config: StyleConfig) -> None:
+def apply_normal_style(cell: Cell, config: StyleConfig) -> None:
     cell.font = Font(name=config.font_name, size=config.font_size)
 
 
 def apply_conditional_formatting(
-    ws,
+    ws: Worksheet,
     cell_range: str,
     positive_is_good: bool,
     config: StyleConfig,
@@ -158,7 +160,7 @@ def apply_conditional_formatting(
 
 
 def apply_assumption_sheet_validation(
-    ws,
+    ws: Worksheet,
     assumptions: list,
     value_col: int,
     format_col: int,
