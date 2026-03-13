@@ -1,5 +1,6 @@
 """FormulaType enum and render_formula() — produces Excel formula strings."""
 
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -234,8 +235,6 @@ def render_formula(
         # Apply scenario prefix to named ranges
         # Use regex word-boundary matching to avoid substring corruption
         if ctx.scenario_prefix:
-            import re
-
             # Determine which names to prefix
             if ctx.driver_names:
                 # New mode: only prefix driver names
