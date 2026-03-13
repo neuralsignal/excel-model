@@ -27,6 +27,7 @@ def make_ctx(**overrides) -> CellContext:
         first_proj_col_letter="D",
         last_proj_col_letter="H",
         entity_col_range="$B$5:$D$5",
+        driver_names=frozenset(),
     )
     defaults.update(overrides)
     return CellContext(**defaults)
