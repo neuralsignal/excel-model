@@ -19,6 +19,7 @@ def make_ctx(
     first_proj_col_letter: str = "",
     last_proj_col_letter: str = "",
     entity_col_range: str = "",
+    driver_names: frozenset[str] = frozenset(),
 ) -> CellContext:
     return CellContext(
         period_index=period_index,
@@ -34,6 +35,7 @@ def make_ctx(
         first_proj_col_letter=first_proj_col_letter,
         last_proj_col_letter=last_proj_col_letter,
         entity_col_range=entity_col_range,
+        driver_names=driver_names,
     )
 
 

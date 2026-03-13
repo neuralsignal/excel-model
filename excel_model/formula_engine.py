@@ -43,7 +43,7 @@ class CellContext:
     first_proj_col_letter: str  # e.g., "D" — first projection column
     last_proj_col_letter: str  # e.g., "H" — last projection column
     entity_col_range: str  # e.g., "$B$5:$H$5" — full row range for RANK/MAX formulas
-    driver_names: frozenset[str] = frozenset()  # when non-empty, only these names get scenario-prefixed
+    driver_names: frozenset[str]  # when non-empty, only these names get scenario-prefixed
 
 
 def _abs_col(col_letter: str, row: int) -> str:

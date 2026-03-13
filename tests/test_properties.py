@@ -38,6 +38,7 @@ def make_ctx(period_index: int, n_history: int, col: int) -> CellContext:
         first_proj_col_letter="",
         last_proj_col_letter="",
         entity_col_range="",
+        driver_names=frozenset(),
     )
 
 

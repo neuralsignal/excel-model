@@ -137,6 +137,7 @@ def _build_comparison_model_sheet(
                     first_proj_col_letter="",
                     last_proj_col_letter="",
                     entity_col_range=entity_col_range,
+                    driver_names=frozenset(),
                 )
 
                 value = render_formula(li.formula_type, params, ctx)
