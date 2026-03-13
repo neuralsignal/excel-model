@@ -1,7 +1,7 @@
 """Shared utilities for building Assumptions and Inputs sheets."""
 
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font
+from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
 from excel_model.loader import InputData
@@ -246,28 +246,3 @@ def build_inputs_sheet(
         current_row += 1
 
     return inputs_row_map
-
-
-def write_model_header_row(
-    ws,
-    periods: list[Period],
-    style: StyleConfig,
-    n_header_cols_before: int = 0,
-) -> None:
-    """Write the period label row (row 2 in model sheet).
-
-    Columns: "Line Item" + one column per period.
-    History columns get history fill.
-    """
-    from excel_model.style import apply_history_col_style
-
-    label_cell = ws.cell(row=2, column=1, value="Line Item")
-    apply_header_style(label_cell, style)
-
-    for col_idx, period in enumerate(periods, start=2):
-        cell = ws.cell(row=2, column=col_idx, value=period.label)
-        if period.is_history:
-            apply_history_col_style(cell, style)
-            cell.font = Font(name=style.font_name, size=style.font_size, bold=True)
-        else:
-            apply_header_style(cell, style)
