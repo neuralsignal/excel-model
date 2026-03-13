@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from excel_model.config import load_style
-from excel_model.exceptions import StyleConfigError
+from excel_model.exceptions import ExcelModelError, StyleConfigError
 
 
 @click.group()
@@ -109,7 +109,9 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
         from excel_model.excel_writer import build_workbook
 
         build_workbook(spec=loaded_spec, inputs=inputs, output_path=output, style=loaded_style)
-    except Exception as e:
+    except ExcelModelError as e:
+        emit_error(f"Failed to build workbook: {e}")
+    except (ValueError, KeyError, FileNotFoundError) as e:
         emit_error(f"Failed to build workbook: {e}")
 
     output_path = str(Path(output).resolve())
