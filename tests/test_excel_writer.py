@@ -8,6 +8,8 @@ from openpyxl import load_workbook
 from excel_model.excel_writer import build_workbook
 from excel_model.spec import (
     AssumptionDef,
+    ColumnGroupDef,
+    EntityDef,
     InputsDef,
     LineItemDef,
     MetadataDef,
@@ -214,3 +216,151 @@ class TestBuildWorkbook:
         wb = load_workbook(output)
         assert "Model" in wb.sheetnames
         assert "BullRevenueGrowthRate" in wb.defined_names
+
+    def test_comparison_model(self, style, tmp_path):
+        comparison_spec = ModelSpec(
+            model_type="comparison",
+            title="Comparison Test",
+            currency="CHF",
+            granularity="auto",
+            start_period="2025",
+            n_periods=0,
+            n_history_periods=0,
+            assumptions=(),
+            line_items=(
+                LineItemDef(
+                    key="revenue",
+                    label="Revenue",
+                    formula_type="constant",
+                    formula_params={"value": 0},
+                    is_subtotal=False,
+                    is_total=False,
+                    section="Revenue",
+                    format="",
+                ),
+            ),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+            entities=(
+                EntityDef(key="entity_a", label="Entity A"),
+                EntityDef(key="entity_b", label="Entity B"),
+            ),
+            drivers=(),
+        )
+        output = str(tmp_path / "comparison.xlsx")
+        build_workbook(comparison_spec, None, output, style)
+        wb = load_workbook(output)
+        assert Path(output).exists()
+        assert "Model" in wb.sheetnames
+
+    def test_budget_vs_actuals_model(self, style, tmp_path):
+        bva_spec = ModelSpec(
+            model_type="budget_vs_actuals",
+            title="BvA Test",
+            currency="CHF",
+            granularity="monthly",
+            start_period="2025-01",
+            n_periods=3,
+            n_history_periods=0,
+            assumptions=(
+                AssumptionDef(
+                    name="RevenueGrowthRate", label="Rev Growth", value=0.08, format="percent", group="Budget"
+                ),
+            ),
+            line_items=(
+                LineItemDef(
+                    key="revenue_plan",
+                    label="Revenue (Plan)",
+                    formula_type="constant",
+                    formula_params={"value": 1000},
+                    is_subtotal=False,
+                    is_total=False,
+                    section="Revenue",
+                    format="",
+                ),
+                LineItemDef(
+                    key="revenue_actual",
+                    label="Revenue (Actual)",
+                    formula_type="constant",
+                    formula_params={"value": 1050},
+                    is_subtotal=False,
+                    is_total=False,
+                    section="Revenue",
+                    format="",
+                ),
+                LineItemDef(
+                    key="revenue",
+                    label="Revenue Variance",
+                    formula_type="variance",
+                    formula_params={"plan_key": "revenue_plan", "actual_key": "revenue_actual"},
+                    is_subtotal=False,
+                    is_total=False,
+                    section="Revenue",
+                    format="",
+                ),
+            ),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(
+                ColumnGroupDef(key="plan", label="Plan", color_hex="D6E4F0"),
+                ColumnGroupDef(key="actual", label="Actual", color_hex="FDFEFE"),
+                ColumnGroupDef(key="variance", label="Variance", color_hex="FEF9E7"),
+            ),
+            inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+            entities=(),
+            drivers=(),
+        )
+        output = str(tmp_path / "bva.xlsx")
+        build_workbook(bva_spec, None, output, style)
+        wb = load_workbook(output)
+        assert Path(output).exists()
+        assert "Model" in wb.sheetnames
+
+    def test_custom_model_dispatches_to_p_and_l(self, style, tmp_path):
+        custom_spec = make_p_and_l_spec()
+        custom_spec = ModelSpec(
+            model_type="custom",
+            title=custom_spec.title,
+            currency=custom_spec.currency,
+            granularity=custom_spec.granularity,
+            start_period=custom_spec.start_period,
+            n_periods=custom_spec.n_periods,
+            n_history_periods=custom_spec.n_history_periods,
+            assumptions=custom_spec.assumptions,
+            line_items=custom_spec.line_items,
+            metadata=custom_spec.metadata,
+            scenarios=custom_spec.scenarios,
+            column_groups=custom_spec.column_groups,
+            inputs=custom_spec.inputs,
+            entities=custom_spec.entities,
+            drivers=custom_spec.drivers,
+        )
+        output = str(tmp_path / "custom.xlsx")
+        build_workbook(custom_spec, None, output, style)
+        wb = load_workbook(output)
+        assert Path(output).exists()
+        assert "Model" in wb.sheetnames
+
+    def test_unknown_model_type_raises(self, style, tmp_path):
+        bad_spec = ModelSpec(
+            model_type="nonexistent",
+            title="Bad",
+            currency="CHF",
+            granularity="annual",
+            start_period="2025",
+            n_periods=1,
+            n_history_periods=0,
+            assumptions=(),
+            line_items=(),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+            entities=(),
+            drivers=(),
+        )
+        output = str(tmp_path / "bad.xlsx")
+        with pytest.raises(ValueError, match="Unknown model_type"):
+            build_workbook(bad_spec, None, output, style)
