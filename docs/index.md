@@ -6,17 +6,72 @@ Build professional financial models from declarative YAML specs. Generates `.xls
 
 ## Model Types
 
-- **P&L** — Profit & Loss statement with growth projections
-- **DCF** — Discounted Cash Flow valuation
-- **Budget vs Actuals** — Monthly/quarterly variance analysis
-- **Scenario** — Multi-scenario (Base/Bull/Bear) side-by-side analysis
-- **Comparison** — Cross-entity comparison with rankings
+| Type | Description |
+|------|-------------|
+| `p_and_l` | Profit & Loss statement with growth projections |
+| `dcf` | Discounted Cash Flow valuation |
+| `budget_vs_actuals` | Monthly/quarterly variance analysis |
+| `scenario` | Multi-scenario (Base/Bull/Bear) side-by-side analysis |
+| `comparison` | Cross-entity comparison with rankings |
 
 ## Quick Start
 
+### Installation
+
 ```bash
 pip install excel-model
-excel-model build --spec model.yaml --output model.xlsx --mode batch
 ```
 
-See the [API Reference](api/spec.md) for Python API usage.
+### CLI
+
+```bash
+# Build a model
+excel-model build --spec model.yaml --output model.xlsx --mode batch
+
+# Validate a spec
+excel-model validate --spec model.yaml
+
+# Describe what a spec would produce (dry run)
+excel-model describe --spec model.yaml --format text
+```
+
+`--mode` accepts `batch` (JSON to stdout) or `interactive` (verbose narrative).
+
+### Python API
+
+```python
+from excel_model.spec_loader import load_spec
+from excel_model.validator import validate_spec
+from excel_model.excel_writer import build_workbook
+from excel_model.config import load_style
+
+spec = load_spec("model.yaml")
+errors = validate_spec(spec)
+assert not errors
+
+style = load_style(None)  # uses bundled defaults
+build_workbook(spec=spec, inputs=None, output_path="model.xlsx", style=style)
+```
+
+## Configuration
+
+Style config controls Excel formatting (colors, fonts, number formats). A bundled default is included; override with `--style path/to/style.yaml`.
+
+All keys are required when providing a custom style file; user values are deep-merged on top of the bundled defaults so you only need to specify what you want to override:
+
+```yaml
+header_fill_hex: "1F3864"
+header_font_color: "FFFFFF"
+subtotal_fill_hex: "D9E1F2"
+total_fill_hex: "BDD7EE"
+history_col_fill_hex: "F2F2F2"
+section_header_fill_hex: "E2EFDA"
+font_name: "Calibri"
+font_size: 10
+number_format_currency: '#,##0'
+number_format_percent: '0.0%'
+number_format_integer: '#,##0'
+number_format_number: '#,##0.00'
+```
+
+See the [API Reference](api/spec.md) for full Python API documentation.
