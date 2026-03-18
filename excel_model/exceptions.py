@@ -19,3 +19,7 @@ class InputDataError(ExcelModelError):
 
 class StyleConfigError(ExcelModelError):
     """Raised when style configuration is invalid or missing."""
+
+
+class FormulaInjectionError(ExcelModelError):
+    """Raised when a custom formula contains a potentially dangerous pattern."""

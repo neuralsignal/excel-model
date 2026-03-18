@@ -2,11 +2,49 @@
 
 import re
 
+from excel_model.exceptions import FormulaInjectionError
 from excel_model.formula_engine import FormulaType
 from excel_model.loader import InputData
 from excel_model.spec import ModelSpec
 
 _VALID_NAMED_RANGE_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
+
+# Patterns that indicate potential Excel formula injection (DDE, external data exfiltration)
+_DANGEROUS_FORMULA_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\bCMD\b", re.IGNORECASE),
+    re.compile(r"\bDDE\b", re.IGNORECASE),
+    re.compile(r"\bDDEAUTO\b", re.IGNORECASE),
+    re.compile(r"\bWEBSERVICE\s*\(", re.IGNORECASE),
+    re.compile(r"\bFILTERXML\s*\(", re.IGNORECASE),
+    re.compile(r"\bIMPORTDATA\s*\(", re.IGNORECASE),
+    re.compile(r"\bIMPORTFEED\s*\(", re.IGNORECASE),
+    re.compile(r"\bIMPORTHTML\s*\(", re.IGNORECASE),
+    re.compile(r"\bIMPORTRANGE\s*\(", re.IGNORECASE),
+    re.compile(r"\bIMPORTXML\s*\(", re.IGNORECASE),
+    re.compile(r"\bCALL\s*\(", re.IGNORECASE),
+    re.compile(r"\bREGISTER\.ID\s*\(", re.IGNORECASE),
+    re.compile(r"\bEXEC\s*\(", re.IGNORECASE),
+)
+
+# Pipe-based DDE invocations like =CMD|'/c calc'!A0
+_DDE_PIPE_RE = re.compile(r"\|.*!", re.IGNORECASE)
+
+
+def validate_custom_formula(formula: str, line_item_key: str) -> None:
+    """Reject custom formulas containing dangerous Excel patterns.
+
+    Raises FormulaInjectionError if the formula matches a known injection pattern.
+    """
+    for pattern in _DANGEROUS_FORMULA_PATTERNS:
+        if pattern.search(formula):
+            raise FormulaInjectionError(
+                f"Line item {line_item_key!r}: custom formula contains dangerous pattern "
+                f"{pattern.pattern!r}. Formula: {formula!r}"
+            )
+    if _DDE_PIPE_RE.search(formula):
+        raise FormulaInjectionError(
+            f"Line item {line_item_key!r}: custom formula contains a pipe-based DDE pattern. Formula: {formula!r}"
+        )
 
 
 _VALID_MODEL_TYPES = {"p_and_l", "dcf", "budget_vs_actuals", "scenario", "comparison", "custom"}
@@ -162,6 +200,22 @@ def validate_spec(spec: ModelSpec) -> list[str]:
                 if param not in li.formula_params:
                     errors.append(
                         f"Line item {li.key!r} (formula_type={li.formula_type!r}) missing required param {param!r}"
+                    )
+
+    # Validate custom formulas for injection patterns
+    for li in spec.line_items:
+        if li.formula_type == "custom" and "formula" in li.formula_params:
+            raw = li.formula_params["formula"]
+            if isinstance(raw, str):
+                for pattern in _DANGEROUS_FORMULA_PATTERNS:
+                    if pattern.search(raw):
+                        errors.append(
+                            f"Line item {li.key!r}: custom formula contains dangerous pattern "
+                            f"{pattern.pattern!r}. Formula: {raw!r}"
+                        )
+                if _DDE_PIPE_RE.search(raw):
+                    errors.append(
+                        f"Line item {li.key!r}: custom formula contains a pipe-based DDE pattern. Formula: {raw!r}"
                     )
 
     # Cross-reference validation: keys referenced in formula_params must exist as line items

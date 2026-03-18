@@ -225,7 +225,11 @@ def render_formula(
         return f"=(${ctx.col_letter}${actual_row}-${ctx.col_letter}${plan_row})/ABS(${ctx.col_letter}${plan_row})"
 
     if ft == FormulaType.CUSTOM:
+        from excel_model.validator import validate_custom_formula
+
         raw = formula_params["formula"]
+        line_item_key = formula_params.get("_line_item_key", "<unknown>")
+        validate_custom_formula(raw, line_item_key)
         # Replace column letter tokens
         result = raw.replace("{col_letter}", ctx.col_letter)
         result = result.replace("{prev_col_letter}", ctx.prior_col_letter)
