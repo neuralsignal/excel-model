@@ -334,8 +334,8 @@ packages:
   requires_python: '>=3.8'
 - pypi: ./
   name: excel-model
-  version: 0.1.1
-  sha256: a18a7c1b591d1c9000c5ba7c10d2e8ef59d1ff2b1b664e1bf22a0d852f5072fb
+  version: 0.1.2
+  sha256: 4a218d90448932eaebf87ac1ac1987f2eb808425dbd13b092b3dc33874454ed1
   requires_dist:
   - openpyxl>=3.1,<4
   - polars>=1.0,<2
