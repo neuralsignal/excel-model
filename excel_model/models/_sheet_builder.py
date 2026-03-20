@@ -6,7 +6,7 @@ from openpyxl.utils import get_column_letter
 
 from excel_model.loader import InputData
 from excel_model.named_ranges import register_named_range
-from excel_model.spec import AssumptionDef, ModelSpec, ScenarioDef
+from excel_model.spec import AssumptionDef, LineItemDef, ModelSpec, ScenarioDef
 from excel_model.style import (
     StyleConfig,
     apply_assumption_sheet_validation,
@@ -16,6 +16,25 @@ from excel_model.style import (
     get_number_format,
 )
 from excel_model.time_engine import Period
+
+
+def group_line_items_by_section(
+    line_items: tuple[LineItemDef, ...],
+) -> tuple[list[str], dict[str, list[LineItemDef]]]:
+    """Group line items by section, preserving insertion order.
+
+    Returns (sections_order, sections_items) where sections_order is the list
+    of unique section names in first-seen order and sections_items maps each
+    section name to its line items.
+    """
+    sections_order: list[str] = []
+    sections_items: dict[str, list[LineItemDef]] = {}
+    for li in line_items:
+        if li.section not in sections_items:
+            sections_order.append(li.section)
+            sections_items[li.section] = []
+        sections_items[li.section].append(li)
+    return sections_order, sections_items
 
 
 def build_assumptions_sheet(

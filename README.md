@@ -66,6 +66,8 @@ build_workbook(spec=spec, inputs=None, output_path="model.xlsx", style=style)
 
 21 built-in formula types including `growth_projected`, `pct_of_revenue`, `sum_of_rows`, `subtraction`, `ratio`, `discounted_pv`, `terminal_value`, `npv_sum`, `variance`, `variance_pct`, `constant`, `custom`, and more.
 
+**Custom formula security:** The `custom` formula type rejects formulas containing dangerous patterns (DDE, WEBSERVICE, IMPORTDATA, CALL, EXEC, FILTERXML, REGISTER.ID, etc.) to prevent Excel formula injection attacks. Standard Excel functions like SUM, IF, ROUND, and MAX are allowed.
+
 ## Configuration
 
 Style config controls Excel formatting (colors, fonts, number formats). A bundled default is included; override with `--style`:

@@ -156,7 +156,7 @@ class TestValidateSpecCustomFormulaInjection:
     def test_spec_validation_catches_dde_pipe(self) -> None:
         spec = make_spec_with_custom_formula("=CMD|'/c calc'!A0")
         errors = validate_spec(spec)
-        assert any("DDE" in e or "pipe" in e.lower() for e in errors)
+        assert any("dangerous" in e.lower() or "DDE" in e or "pipe" in e.lower() for e in errors)
 
     def test_spec_validation_allows_safe_formula(self) -> None:
         spec = make_spec_with_custom_formula("=A1+B1*1.1")

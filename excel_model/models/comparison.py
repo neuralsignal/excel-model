@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import CellContext, render_formula
 from excel_model.loader import InputData
-from excel_model.models._sheet_builder import build_assumptions_sheet
+from excel_model.models._sheet_builder import build_assumptions_sheet, group_line_items_by_section
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import ModelSpec
 from excel_model.style import (
@@ -73,13 +73,7 @@ def _build_comparison_model_sheet(
     current_row = 3
     row_map: dict[str, int] = {}
 
-    sections_order: list[str] = []
-    sections_items: dict[str, list] = {}
-    for li in spec.line_items:
-        if li.section not in sections_items:
-            sections_order.append(li.section)
-            sections_items[li.section] = []
-        sections_items[li.section].append(li)
+    sections_order, sections_items = group_line_items_by_section(spec.line_items)
 
     for section in sections_order:
         if section:
