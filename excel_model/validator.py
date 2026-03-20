@@ -11,6 +11,7 @@ _VALID_NAMED_RANGE_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
 
 _VALID_MODEL_TYPES = {"p_and_l", "dcf", "budget_vs_actuals", "scenario", "comparison", "custom"}
 _VALID_GRANULARITIES = {"monthly", "quarterly", "annual", "auto"}
+_VALID_FORMATS = {"number", "percent", "currency", "integer"}
 
 _REQUIRED_PARAMS: dict[str, list[str]] = {
     "growth_projected": ["growth_assumption"],
@@ -56,6 +57,17 @@ _KEY_LIST_REF_PARAMS = {"addend_keys", "subtrahend_keys"}
 def validate_spec(spec: ModelSpec) -> list[str]:
     """Return a list of error strings. Empty list means valid."""
     errors: list[str] = []
+    errors.extend(_validate_top_level_fields(spec))
+    errors.extend(_validate_assumptions(spec))
+    errors.extend(_validate_drivers(spec))
+    errors.extend(_validate_line_items(spec))
+    errors.extend(_validate_model_type_rules(spec))
+    return errors
+
+
+def _validate_top_level_fields(spec: ModelSpec) -> list[str]:
+    """Validate model_type, title, currency, granularity, start_period, and period counts."""
+    errors: list[str] = []
 
     if spec.model_type not in _VALID_MODEL_TYPES:
         errors.append(f"Invalid model_type: {spec.model_type!r}. Must be one of {sorted(_VALID_MODEL_TYPES)}")
@@ -79,16 +91,19 @@ def validate_spec(spec: ModelSpec) -> list[str]:
     if spec.n_history_periods < 0:
         errors.append(f"n_history_periods must be >= 0, got {spec.n_history_periods}")
 
-    # Validate assumption names are unique
-    assumption_names = [a.name for a in spec.assumptions]
-    seen_names: set[str] = set()
-    for name in assumption_names:
-        if name in seen_names:
-            errors.append(f"Duplicate assumption name: {name!r}")
-        seen_names.add(name)
+    return errors
 
-    # Validate assumption names are valid Excel named range identifiers
+
+def _validate_assumptions(spec: ModelSpec) -> list[str]:
+    """Validate assumption name uniqueness, named-range format, and value formats."""
+    errors: list[str] = []
+
+    seen_names: set[str] = set()
     for assumption in spec.assumptions:
+        if assumption.name in seen_names:
+            errors.append(f"Duplicate assumption name: {assumption.name!r}")
+        seen_names.add(assumption.name)
+
         if not _VALID_NAMED_RANGE_RE.match(assumption.name):
             errors.append(
                 f"Assumption name {assumption.name!r} is not a valid Excel named range. "
@@ -96,23 +111,32 @@ def validate_spec(spec: ModelSpec) -> list[str]:
                 f"letters, digits, underscores, or periods."
             )
 
-    # Validate driver names are unique
-    driver_names_list = [d.name for d in spec.drivers]
-    seen_driver_names: set[str] = set()
-    for name in driver_names_list:
-        if name in seen_driver_names:
-            errors.append(f"Duplicate driver name: {name!r}")
-        seen_driver_names.add(name)
-
-    # Validate driver names don't collide with assumption names
-    for name in driver_names_list:
-        if name in seen_names:
+        if assumption.format not in _VALID_FORMATS:
             errors.append(
-                f"Driver name {name!r} collides with assumption name. Assumptions and drivers share a namespace."
+                f"Assumption {assumption.name!r} has invalid format: {assumption.format!r}. "
+                f"Valid formats: {sorted(_VALID_FORMATS)}"
             )
 
-    # Validate driver names are valid Excel named range identifiers
+    return errors
+
+
+def _validate_drivers(spec: ModelSpec) -> list[str]:
+    """Validate driver uniqueness, named-range format, format validity, and namespace collisions."""
+    errors: list[str] = []
+
+    assumption_names = {a.name for a in spec.assumptions}
+    seen_driver_names: set[str] = set()
+
     for driver in spec.drivers:
+        if driver.name in seen_driver_names:
+            errors.append(f"Duplicate driver name: {driver.name!r}")
+        seen_driver_names.add(driver.name)
+
+        if driver.name in assumption_names:
+            errors.append(
+                f"Driver name {driver.name!r} collides with assumption name. Assumptions and drivers share a namespace."
+            )
+
         if not _VALID_NAMED_RANGE_RE.match(driver.name):
             errors.append(
                 f"Driver name {driver.name!r} is not a valid Excel named range. "
@@ -120,16 +144,13 @@ def validate_spec(spec: ModelSpec) -> list[str]:
                 f"letters, digits, underscores, or periods."
             )
 
-    # Validate driver formats
-    valid_formats = {"number", "percent", "currency", "integer"}
-    for driver in spec.drivers:
-        if driver.format not in valid_formats:
+        if driver.format not in _VALID_FORMATS:
             errors.append(
-                f"Driver {driver.name!r} has invalid format: {driver.format!r}. Valid formats: {sorted(valid_formats)}"
+                f"Driver {driver.name!r} has invalid format: {driver.format!r}. Valid formats: {sorted(_VALID_FORMATS)}"
             )
 
     # Validate driver_overrides keys reference actual driver names
-    driver_name_set = set(driver_names_list)
+    driver_name_set = set(seen_driver_names)
     for scenario in spec.scenarios:
         for key in scenario.driver_overrides:
             if key not in driver_name_set:
@@ -137,25 +158,28 @@ def validate_spec(spec: ModelSpec) -> list[str]:
                     f"Scenario {scenario.name!r} has driver_overrides key {key!r} that does not match any driver name"
                 )
 
-    # Validate line item keys are unique
+    return errors
+
+
+def _validate_line_items(spec: ModelSpec) -> list[str]:
+    """Validate line item key uniqueness, formula types, required params, and cross-references."""
+    errors: list[str] = []
+
     line_item_keys = {li.key for li in spec.line_items}
+    valid_formula_types = {ft.value for ft in FormulaType}
+
     seen_keys: set[str] = set()
     for li in spec.line_items:
         if li.key in seen_keys:
             errors.append(f"Duplicate line item key: {li.key!r}")
         seen_keys.add(li.key)
 
-    # Validate each line item's formula_type
-    valid_formula_types = {ft.value for ft in FormulaType}
-    for li in spec.line_items:
         if li.formula_type not in valid_formula_types:
             errors.append(
                 f"Line item {li.key!r} has unknown formula_type: {li.formula_type!r}. "
                 f"Valid types: {sorted(valid_formula_types)}"
             )
 
-    # Validate formula_params: required params present
-    for li in spec.line_items:
         if li.formula_type in _REQUIRED_PARAMS:
             required = _REQUIRED_PARAMS[li.formula_type]
             for param in required:
@@ -164,8 +188,6 @@ def validate_spec(spec: ModelSpec) -> list[str]:
                         f"Line item {li.key!r} (formula_type={li.formula_type!r}) missing required param {param!r}"
                     )
 
-    # Cross-reference validation: keys referenced in formula_params must exist as line items
-    for li in spec.line_items:
         for param_name, param_value in li.formula_params.items():
             if (
                 param_name in _KEY_REF_PARAMS
@@ -179,15 +201,19 @@ def validate_spec(spec: ModelSpec) -> list[str]:
                     if isinstance(ref_key, str) and ref_key not in line_item_keys:
                         errors.append(f"Line item {li.key!r} references unknown key {ref_key!r} via {param_name!r}")
 
-    # Validate scenario model has scenarios defined
+    return errors
+
+
+def _validate_model_type_rules(spec: ModelSpec) -> list[str]:
+    """Validate model-type-specific rules (scenario, bva, comparison, dcf)."""
+    errors: list[str] = []
+
     if spec.model_type == "scenario" and not spec.scenarios:
         errors.append("Scenario model must have at least one scenario defined")
 
-    # Validate budget_vs_actuals has column_groups defined
     if spec.model_type == "budget_vs_actuals" and not spec.column_groups:
         errors.append("Budget vs Actuals model must have column_groups defined")
 
-    # Validate comparison model
     if spec.model_type == "comparison":
         if not spec.entities:
             errors.append("Comparison model must have at least one entity defined")
@@ -197,15 +223,6 @@ def validate_spec(spec: ModelSpec) -> list[str]:
                 errors.append(f"Duplicate entity key: {entity.key!r}")
             entity_keys.add(entity.key)
 
-    # Validate assumption formats
-    for assumption in spec.assumptions:
-        if assumption.format not in valid_formats:
-            errors.append(
-                f"Assumption {assumption.name!r} has invalid format: {assumption.format!r}. "
-                f"Valid formats: {sorted(valid_formats)}"
-            )
-
-    # WACC ≠ TGR guard for DCF models
     if spec.model_type == "dcf":
         errors.extend(_validate_wacc_tgr(spec))
 
