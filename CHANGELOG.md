@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Security
+
+* Reject dangerous patterns in custom Excel formulas (DDE, WEBSERVICE, IMPORTDATA, CALL, EXEC, etc.) to prevent formula injection attacks. Validation runs at both spec validation and formula rendering time as defense-in-depth. ([#28](https://github.com/neuralsignal/excel-model/issues/28))
+
 ## [0.1.1](https://github.com/neuralsignal/excel-model/compare/v0.1.0...v0.1.1) (2026-03-17)
 
 

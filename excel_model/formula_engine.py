@@ -250,7 +250,11 @@ def _render_custom(
     params: dict[str, Any],
     ctx: CellContext,
 ) -> str:
+    from excel_model.validator import validate_custom_formula
+
     raw = params["formula"]
+    line_item_key = params.get("_line_item_key", "<unknown>")
+    validate_custom_formula(raw, line_item_key)
     result = raw.replace("{col_letter}", ctx.col_letter)
     result = result.replace("{prev_col_letter}", ctx.prior_col_letter)
     for key, row in ctx.row_map.items():
