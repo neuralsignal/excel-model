@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2](https://github.com/neuralsignal/excel-model/compare/v0.1.1...v0.1.2) (2026-03-20)
+
+
+### Bug Fixes
+
+* merge main, fix DRY violation, and update docs for formula injection ([8347faa](https://github.com/neuralsignal/excel-model/commit/8347faaa72bb8e439d778cc71cbc39aba450b041))
+* reject dangerous patterns in custom Excel formulas ([5786891](https://github.com/neuralsignal/excel-model/commit/5786891164bd5dc8ab5ec62c90e0e47ee4240d14))
+* reject dangerous patterns in custom Excel formulas ([78d64c0](https://github.com/neuralsignal/excel-model/commit/78d64c06e9ce8216d6cc07d1b0264efa2119bbf5)), closes [#28](https://github.com/neuralsignal/excel-model/issues/28)
+
 ## [Unreleased]
 
 ### Security
