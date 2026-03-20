@@ -10,6 +10,7 @@ from excel_model.models._sheet_builder import (
     build_assumptions_sheet,
     build_drivers_sheet,
     build_inputs_sheet,
+    group_line_items_by_section,
 )
 from excel_model.named_ranges import get_col_letter, register_named_range
 from excel_model.spec import ModelSpec, ScenarioDef
@@ -164,13 +165,7 @@ def _build_scenario_model_sheet(
     # Assign rows
     current_row = 4
     row_map: dict[str, int] = {}
-    sections_order: list[str] = []
-    sections_items: dict[str, list] = {}
-    for li in spec.line_items:
-        if li.section not in sections_items:
-            sections_order.append(li.section)
-            sections_items[li.section] = []
-        sections_items[li.section].append(li)
+    sections_order, sections_items = group_line_items_by_section(spec.line_items)
 
     for section in sections_order:
         if section:
