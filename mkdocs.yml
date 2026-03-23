@@ -33,12 +33,14 @@ nav:
       - Excel Writer: api/excel_writer.md
       - Config: api/config.md
       - CLI: api/cli.md
+  - Changelog: changelog.md
 
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.snippets
   - admonition
   - toc:
       permalink: true

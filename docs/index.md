@@ -13,6 +13,7 @@ Build professional financial models from declarative YAML specs. Generates `.xls
 | `budget_vs_actuals` | Monthly/quarterly variance analysis |
 | `scenario` | Multi-scenario (Base/Bull/Bear) side-by-side analysis |
 | `comparison` | Cross-entity comparison with rankings |
+| `custom` | Custom P&L-style model (uses P&L builder) |
 
 ## Quick Start
 
@@ -28,8 +29,14 @@ pip install excel-model
 # Build a model
 excel-model build --spec model.yaml --output model.xlsx --mode batch
 
+# Build with input data
+excel-model build --spec model.yaml --output model.xlsx --mode batch --data actuals.csv
+
 # Validate a spec
 excel-model validate --spec model.yaml
+
+# Validate spec and input data column mapping
+excel-model validate --spec model.yaml --data actuals.csv
 
 # Describe what a spec would produce (dry run)
 excel-model describe --spec model.yaml --format text
@@ -73,5 +80,9 @@ number_format_percent: '0.0%'
 number_format_integer: '#,##0'
 number_format_number: '#,##0.00'
 ```
+
+## Security
+
+The `custom` formula type validates user-supplied formulas before writing them to the workbook. Formulas containing dangerous patterns that could enable Excel formula injection (DDE, WEBSERVICE, IMPORTDATA, CALL, EXEC, FILTERXML, REGISTER.ID, and pipe-based DDE invocations) are rejected with a `FormulaInjectionError`. Standard Excel functions (SUM, IF, ROUND, etc.) are allowed.
 
 See the [API Reference](api/spec.md) for full Python API documentation.
