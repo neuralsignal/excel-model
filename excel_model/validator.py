@@ -24,6 +24,8 @@ _DANGEROUS_FORMULA_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bCALL\s*\(", re.IGNORECASE),
     re.compile(r"\bREGISTER\.ID\s*\(", re.IGNORECASE),
     re.compile(r"\bEXEC\s*\(", re.IGNORECASE),
+    re.compile(r"\bHYPERLINK\s*\(", re.IGNORECASE),
+    re.compile(r"\bRTD\s*\(", re.IGNORECASE),
 )
 
 # Pipe-based DDE invocations like =CMD|'/c calc'!A0
