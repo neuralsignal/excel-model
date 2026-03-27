@@ -1,9 +1,7 @@
 """StyleConfig dataclass and openpyxl cell applier functions."""
 
 from dataclasses import dataclass
-from pathlib import Path
 
-import yaml
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.worksheet import Worksheet
@@ -23,46 +21,6 @@ class StyleConfig:
     number_format_percent: str
     number_format_integer: str
     number_format_number: str
-
-
-def load_style_config(path: str) -> StyleConfig:
-    """Load StyleConfig from a YAML file. All fields required."""
-    p = Path(path)
-    if not p.exists():
-        raise FileNotFoundError(f"Style config not found: {path}")
-    with p.open() as f:
-        data = yaml.safe_load(f)
-    required = [
-        "header_fill_hex",
-        "header_font_color",
-        "subtotal_fill_hex",
-        "total_fill_hex",
-        "history_col_fill_hex",
-        "section_header_fill_hex",
-        "font_name",
-        "font_size",
-        "number_format_currency",
-        "number_format_percent",
-        "number_format_integer",
-        "number_format_number",
-    ]
-    missing = [k for k in required if k not in data]
-    if missing:
-        raise ValueError(f"Style config missing required keys: {missing}")
-    return StyleConfig(
-        header_fill_hex=data["header_fill_hex"],
-        header_font_color=data["header_font_color"],
-        subtotal_fill_hex=data["subtotal_fill_hex"],
-        total_fill_hex=data["total_fill_hex"],
-        history_col_fill_hex=data["history_col_fill_hex"],
-        section_header_fill_hex=data["section_header_fill_hex"],
-        font_name=data["font_name"],
-        font_size=int(data["font_size"]),
-        number_format_currency=data["number_format_currency"],
-        number_format_percent=data["number_format_percent"],
-        number_format_integer=data["number_format_integer"],
-        number_format_number=data["number_format_number"],
-    )
 
 
 def _make_fill(hex_color: str) -> PatternFill:

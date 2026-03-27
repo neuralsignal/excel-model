@@ -3,7 +3,6 @@
 from dataclasses import FrozenInstanceError
 
 import pytest
-import yaml
 from hypothesis import given
 from hypothesis import strategies as st
 from openpyxl import Workbook
@@ -14,7 +13,6 @@ from excel_model.style import (
     apply_conditional_formatting,
     apply_header_style,
     get_number_format,
-    load_style_config,
 )
 
 SAMPLE_STYLE_DATA = {
@@ -42,31 +40,6 @@ def test_style_config_creation(sample_style):
 def test_style_config_frozen(sample_style):
     with pytest.raises(FrozenInstanceError):
         sample_style.font_size = 12  # type: ignore
-
-
-def test_load_style_config(tmp_path, sample_style):
-    style_path = tmp_path / "style.yaml"
-    with style_path.open("w") as f:
-        yaml.dump(SAMPLE_STYLE_DATA, f)
-
-    loaded = load_style_config(str(style_path))
-    assert loaded.header_fill_hex == "1F3864"
-    assert loaded.font_name == "Calibri"
-    assert loaded.font_size == 10
-
-
-def test_load_style_config_missing_file():
-    with pytest.raises(FileNotFoundError):
-        load_style_config("/nonexistent/path/style.yaml")
-
-
-def test_load_style_config_missing_keys(tmp_path):
-    incomplete = {"header_fill_hex": "FFFFFF"}
-    style_path = tmp_path / "style.yaml"
-    with style_path.open("w") as f:
-        yaml.dump(incomplete, f)
-    with pytest.raises(ValueError, match="missing required keys"):
-        load_style_config(str(style_path))
 
 
 def test_get_number_format_currency(sample_style):
