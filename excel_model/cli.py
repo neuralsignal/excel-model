@@ -12,7 +12,12 @@ from excel_model.exceptions import ExcelModelError, StyleConfigError
 
 @click.group()
 def main() -> None:
-    """YAML-driven Excel financial model generator."""
+    """YAML-driven Excel financial model generator.
+
+    Security: File path arguments (--spec, --data, --style, --output) are passed
+    directly to the filesystem. Do not accept untrusted user input for these
+    arguments without prior path validation and sanitization.
+    """
 
 
 @main.command()

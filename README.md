@@ -81,6 +81,10 @@ number_format_currency: '#,##0'
 number_format_percent: '0.0%'
 ```
 
+## Security Note
+
+File path arguments (`--spec`, `--data`, `--style`, `--output`) are passed directly to the filesystem without path containment checks. This is safe for the default CLI usage where the authenticated user controls their own filesystem. If you wrap this tool in a web API or automated pipeline that accepts user-controlled path inputs, you must validate that resolved paths stay within an allowed base directory before invoking the CLI to prevent path traversal attacks.
+
 ## Looking for Financial Modeling Input
 
 This library was built by a software engineer, not a financial analyst. The model structures, formula types, and default assumptions reflect a developer's interpretation of common financial models.
