@@ -374,3 +374,234 @@ class TestScenarioWithDrivers:
         # All assumptions prefixed per scenario
         assert "BaseGrowth" in wb.defined_names
         assert "BullGrowth" in wb.defined_names
+
+
+# ─── Tests for uncovered code paths ───
+
+
+def test_scenario_all_history_periods(style):
+    """Lines 130-131: all periods are historical, so no projection columns."""
+    spec = ModelSpec(
+        model_type="scenario",
+        title="All History",
+        currency="CHF",
+        granularity="annual",
+        start_period="2025",
+        n_periods=0,
+        n_history_periods=2,
+        assumptions=(AssumptionDef(name="Growth", label="Growth", value=0.10, format="percent", group="G"),),
+        drivers=(),
+        line_items=(
+            LineItemDef(
+                key="rev",
+                label="Revenue",
+                formula_type="constant",
+                formula_params={"value": 100},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+        ),
+        metadata=MetadataDef(preparer="", date="", version="1.0"),
+        scenarios=(ScenarioDef(name="base", label="Base", assumption_overrides={}, driver_overrides={}),),
+        column_groups=(),
+        inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+        entities=(),
+    )
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 0, 2, "annual")
+    build_scenario(wb, spec, None, style, periods)
+    assert "Model" in wb.sheetnames
+    ws = wb["Model"]
+    # Data cells should contain the constant value
+    assert ws.cell(row=4, column=2).value == 100
+
+
+def test_scenario_with_subtotal_and_total_line_items(style):
+    """Lines 191/193/238/240: subtotal and total styling on label and data cells."""
+    spec = ModelSpec(
+        model_type="scenario",
+        title="Subtotal Total Test",
+        currency="CHF",
+        granularity="annual",
+        start_period="2025",
+        n_periods=1,
+        n_history_periods=0,
+        assumptions=(AssumptionDef(name="Growth", label="Growth", value=0.10, format="percent", group="G"),),
+        drivers=(),
+        line_items=(
+            LineItemDef(
+                key="rev",
+                label="Revenue",
+                formula_type="constant",
+                formula_params={"value": 100},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+            LineItemDef(
+                key="subtot",
+                label="Subtotal",
+                formula_type="sum_of_rows",
+                formula_params={"addend_keys": ["rev"]},
+                is_subtotal=True,
+                is_total=False,
+                section="",
+                format="",
+            ),
+            LineItemDef(
+                key="total",
+                label="Grand Total",
+                formula_type="sum_of_rows",
+                formula_params={"addend_keys": ["rev"]},
+                is_subtotal=False,
+                is_total=True,
+                section="",
+                format="",
+            ),
+        ),
+        metadata=MetadataDef(preparer="", date="", version="1.0"),
+        scenarios=(ScenarioDef(name="base", label="Base", assumption_overrides={}, driver_overrides={}),),
+        column_groups=(),
+        inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+        entities=(),
+    )
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 1, 0, "annual")
+    build_scenario(wb, spec, None, style, periods)
+    ws = wb["Model"]
+    # Subtotal label cell (row 5) should have bold font from subtotal style
+    subtotal_label = ws.cell(row=5, column=1)
+    assert subtotal_label.value == "Subtotal"
+    assert subtotal_label.font.bold is True
+    # Total label cell (row 6) should have bold font from total style
+    total_label = ws.cell(row=6, column=1)
+    assert total_label.value == "Grand Total"
+    assert total_label.font.bold is True
+    # Data cells also get styled
+    subtotal_data = ws.cell(row=5, column=2)
+    assert subtotal_data.font.bold is True
+    total_data = ws.cell(row=6, column=2)
+    assert total_data.font.bold is True
+
+
+def test_scenario_with_input_ref_formula(style):
+    """Line 206: input_ref formula type sets line_item_key in params."""
+    spec = ModelSpec(
+        model_type="scenario",
+        title="Input Ref Test",
+        currency="CHF",
+        granularity="annual",
+        start_period="2025",
+        n_periods=2,
+        n_history_periods=0,
+        assumptions=(AssumptionDef(name="Growth", label="Growth", value=0.05, format="percent", group="G"),),
+        drivers=(),
+        line_items=(
+            LineItemDef(
+                key="rev",
+                label="Revenue",
+                formula_type="input_ref",
+                formula_params={"projected_type": "growth_projected", "growth_assumption": "Growth"},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+        ),
+        metadata=MetadataDef(preparer="", date="", version="1.0"),
+        scenarios=(ScenarioDef(name="base", label="Base", assumption_overrides={}, driver_overrides={}),),
+        column_groups=(),
+        inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+        entities=(),
+    )
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 2, 0, "annual")
+    build_scenario(wb, spec, None, style, periods)
+    ws = wb["Model"]
+    # input_ref with n_history=0 delegates to projected_type, so should produce formulas
+    formulas = []
+    for row in ws.iter_rows():
+        for cell in row:
+            if isinstance(cell.value, str) and cell.value.startswith("="):
+                formulas.append(cell.value)
+    assert formulas, "Expected formulas from input_ref projected delegation"
+
+
+def test_scenario_variance_conditional_formatting(style):
+    """Lines 244-248: variance with positive_is_good triggers conditional formatting."""
+    spec = ModelSpec(
+        model_type="scenario",
+        title="Variance CF Test",
+        currency="CHF",
+        granularity="annual",
+        start_period="2025",
+        n_periods=1,
+        n_history_periods=0,
+        assumptions=(AssumptionDef(name="Growth", label="Growth", value=0.10, format="percent", group="G"),),
+        drivers=(),
+        line_items=(
+            LineItemDef(
+                key="plan",
+                label="Plan",
+                formula_type="constant",
+                formula_params={"value": 100},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+            LineItemDef(
+                key="actual",
+                label="Actual",
+                formula_type="constant",
+                formula_params={"value": 120},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+            LineItemDef(
+                key="var",
+                label="Variance",
+                formula_type="variance",
+                formula_params={"plan_key": "plan", "actual_key": "actual", "positive_is_good": True},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+            LineItemDef(
+                key="var_pct",
+                label="Variance %",
+                formula_type="variance_pct",
+                formula_params={"plan_key": "plan", "actual_key": "actual", "positive_is_good": False},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="percent",
+            ),
+        ),
+        metadata=MetadataDef(preparer="", date="", version="1.0"),
+        scenarios=(ScenarioDef(name="base", label="Base", assumption_overrides={}, driver_overrides={}),),
+        column_groups=(),
+        inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+        entities=(),
+    )
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 1, 0, "annual")
+    build_scenario(wb, spec, None, style, periods)
+    ws = wb["Model"]
+    # Variance row (row 6) should have conditional formatting rules
+    cf_rules = ws.conditional_formatting
+    assert len(cf_rules) >= 2, f"Expected at least 2 conditional formatting rules, got {len(cf_rules)}"
