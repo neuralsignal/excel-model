@@ -198,6 +198,22 @@ class TestBuildStyleFailure:
         assert payload["status"] == "error"
         assert "style" in payload["message"].lower()
 
+    def test_interactive_style_config_error(self, runner, spec_file, tmp_path):
+        """Line 85: interactive build with StyleConfigError."""
+        from excel_model.exceptions import StyleConfigError
+
+        out_path = tmp_path / "out.xlsx"
+        with patch(
+            "excel_model.cli.load_style",
+            side_effect=StyleConfigError("bad style config"),
+        ):
+            result = runner.invoke(
+                main,
+                ["build", "--spec", str(spec_file), "--output", str(out_path), "--mode", "interactive"],
+            )
+        assert result.exit_code != 0
+        assert "bad style config" in result.output
+
 
 class TestBuildWorkbookFailure:
     def test_batch_excel_model_error(self, runner, spec_file, tmp_path):
@@ -293,6 +309,80 @@ class TestBuildWithData:
         assert payload["status"] == "error"
         assert "Failed to load input data" in payload["message"]
 
+    def test_interactive_build_with_valid_data(self, runner, spec_file, tmp_path):
+        """Lines 101-107: interactive build with valid --data file."""
+        import polars as pl
+
+        from excel_model.loader import InputData
+
+        dummy_data = tmp_path / "data.csv"
+        dummy_data.write_text("period,revenue\n2023,100\n2024,200\n")
+        out_path = tmp_path / "out.xlsx"
+        mock_inputs = InputData(
+            df=pl.DataFrame({"period": ["2023", "2024"], "revenue": [100, 200]}),
+            period_col="period",
+            value_cols=["revenue"],
+        )
+        with (
+            patch("excel_model.loader.load", return_value=mock_inputs),
+            patch("excel_model.validator.validate_inputs_against_spec", return_value=[]),
+        ):
+            result = runner.invoke(
+                main,
+                [
+                    "build",
+                    "--spec",
+                    str(spec_file),
+                    "--output",
+                    str(out_path),
+                    "--data",
+                    str(dummy_data),
+                    "--mode",
+                    "interactive",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        assert "Loaded 2 rows" in result.output
+        assert "Workbook saved to" in result.output
+
+    def test_interactive_build_data_validation_error(self, runner, spec_file, tmp_path):
+        """Line 107: interactive build where input data validation fails."""
+        import polars as pl
+
+        from excel_model.loader import InputData
+
+        dummy_data = tmp_path / "data.csv"
+        dummy_data.write_text("period,revenue\n2023,100\n")
+        out_path = tmp_path / "out.xlsx"
+        mock_inputs = InputData(
+            df=pl.DataFrame({"period": ["2023"], "revenue": [100]}),
+            period_col="period",
+            value_cols=["revenue"],
+        )
+        with (
+            patch("excel_model.loader.load", return_value=mock_inputs),
+            patch(
+                "excel_model.validator.validate_inputs_against_spec",
+                return_value=["missing column: cost"],
+            ),
+        ):
+            result = runner.invoke(
+                main,
+                [
+                    "build",
+                    "--spec",
+                    str(spec_file),
+                    "--output",
+                    str(out_path),
+                    "--data",
+                    str(dummy_data),
+                    "--mode",
+                    "interactive",
+                ],
+            )
+        assert result.exit_code != 0
+        assert "Input data validation failed" in result.output
+
 
 # ---------------------------------------------------------------------------
 # validate command
@@ -346,6 +436,30 @@ class TestValidateWithData:
             )
         assert result.exit_code != 0
         assert "bad data file" in result.output
+
+    def test_validate_with_valid_data(self, runner, spec_file, tmp_path):
+        """Lines 162-165: validate with both --spec and a valid --data file."""
+        import polars as pl
+
+        from excel_model.loader import InputData
+
+        dummy_data = tmp_path / "data.csv"
+        dummy_data.write_text("period,revenue\n2023,100\n")
+        mock_inputs = InputData(
+            df=pl.DataFrame({"period": ["2023"], "revenue": [100]}),
+            period_col="period",
+            value_cols=["revenue"],
+        )
+        with (
+            patch("excel_model.loader.load", return_value=mock_inputs),
+            patch("excel_model.validator.validate_inputs_against_spec", return_value=[]),
+        ):
+            result = runner.invoke(
+                main,
+                ["validate", "--spec", str(spec_file), "--data", str(dummy_data)],
+            )
+        assert result.exit_code == 0
+        assert "OK" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -420,6 +534,27 @@ class TestDescribeFailure:
         ):
             result = runner.invoke(main, ["describe", "--spec", str(dummy), "--format", "json"])
         assert result.exit_code != 0
+
+
+class TestDescribeGeneratePeriodsError:
+    def test_describe_bad_start_period(self, runner, tmp_path):
+        """Lines 206-207: describe with invalid start_period triggers ValueError in generate_periods."""
+        bad_period_yaml = """\
+model_type: p_and_l
+title: Bad Period
+currency: CHF
+granularity: annual
+start_period: "not-a-date"
+n_periods: 3
+n_history_periods: 0
+"""
+        spec_f = tmp_path / "spec.yaml"
+        spec_f.write_text(bad_period_yaml)
+        result = runner.invoke(main, ["describe", "--spec", str(spec_f), "--format", "json"])
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["total_periods"] == 0
+        assert payload["period_labels"] == []
 
 
 class TestDescribeValidationErrors:
