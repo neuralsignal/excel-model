@@ -1,12 +1,15 @@
 """Tests for loader.py."""
 
 import json
+from unittest.mock import patch
 
 import polars as pl
 import pytest
 import yaml as pyyaml
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
-from excel_model.loader import InputData, _load_markdown_table, load
+from excel_model.loader import InputData, _load_df, _load_markdown_table, load
 
 
 class TestLoad:
@@ -84,3 +87,106 @@ class TestLoadMarkdownTable:
         md_file.write_text("| period | revenue |\n|----|----|\n| 2023 | 1000 |\n")
         result = load(str(md_file), "period", ["revenue"], "")
         assert len(result.df) == 1
+
+    def test_table_terminated_by_non_pipe_line(self, tmp_path):
+        md_file = tmp_path / "data.md"
+        md_file.write_text(
+            "| period | revenue |\n|--------|--------|\n| 2023   | 1000   |\nSome trailing text\nMore text\n"
+        )
+        df = _load_markdown_table(str(md_file))
+        assert len(df) == 1
+        assert df["period"][0] == "2023"
+
+    def test_malformed_row_raises(self, tmp_path):
+        md_file = tmp_path / "data.md"
+        md_file.write_text("| period | revenue | opex |\n|--------|---------|------|\n| 2023   | 1000    |\n")
+        with pytest.raises(ValueError, match="Malformed markdown table row"):
+            _load_markdown_table(str(md_file))
+
+    def test_no_data_rows_raises(self, tmp_path):
+        md_file = tmp_path / "data.md"
+        md_file.write_text("| period | revenue |\n|--------|--------|\n")
+        with pytest.raises(ValueError, match="no data rows"):
+            _load_markdown_table(str(md_file))
+
+
+class TestLoadXlsxWithSheet:
+    def test_load_xlsx_with_sheet(self, tmp_path):
+        xlsx_file = tmp_path / "data.xlsx"
+        xlsx_file.write_bytes(b"")  # file must exist for the path check
+        expected_df = pl.DataFrame({"period": ["2023"], "cost": [500]})
+        with patch("excel_model.loader.pl.read_excel", return_value=expected_df) as mock_read:
+            df = _load_df(str(xlsx_file), sheet="MySheet")
+            mock_read.assert_called_once_with(str(xlsx_file), sheet_name="MySheet")
+        assert "cost" in df.columns
+
+    def test_load_xlsx_without_sheet(self, tmp_path):
+        xlsx_file = tmp_path / "data.xlsx"
+        xlsx_file.write_bytes(b"")
+        expected_df = pl.DataFrame({"period": ["2023"], "revenue": [1000]})
+        with patch("excel_model.loader.pl.read_excel", return_value=expected_df) as mock_read:
+            _load_df(str(xlsx_file), sheet="")
+            mock_read.assert_called_once_with(str(xlsx_file))
+
+
+class TestLoadYamlNonList:
+    def test_yaml_non_list_raises(self, tmp_path):
+        f = tmp_path / "data.yaml"
+        f.write_text("key: value\n")
+        with pytest.raises(ValueError, match="list of records"):
+            _load_df(str(f), sheet="")
+
+
+# --- Property-based tests for _load_markdown_table ---
+
+# Strategy: generate valid markdown tables
+_header_st = st.text(
+    alphabet=st.characters(whitelist_categories=("L", "N"), whitelist_characters="_"),
+    min_size=1,
+    max_size=10,
+)
+
+
+def _build_md_table(headers: list[str], rows: list[list[str]]) -> str:
+    """Build a markdown pipe table string."""
+    header_line = "| " + " | ".join(headers) + " |"
+    sep_line = "| " + " | ".join("---" for _ in headers) + " |"
+    data_lines = ["| " + " | ".join(row) + " |" for row in rows]
+    return "\n".join([header_line, sep_line] + data_lines) + "\n"
+
+
+_cell_st = st.text(
+    alphabet=st.characters(whitelist_categories=("L", "N"), whitelist_characters="_ .-"),
+    min_size=1,
+    max_size=8,
+).filter(lambda s: "|" not in s)
+
+
+@given(
+    headers=st.lists(_header_st, min_size=1, max_size=5, unique=True),
+    data=st.data(),
+)
+@settings(max_examples=30)
+def test_load_markdown_table_roundtrip(tmp_path_factory, headers, data):
+    num_rows = data.draw(st.integers(min_value=1, max_value=5))
+    rows = [data.draw(st.lists(_cell_st, min_size=len(headers), max_size=len(headers))) for _ in range(num_rows)]
+    md = _build_md_table(headers, rows)
+    md_file = tmp_path_factory.mktemp("md") / "table.md"
+    md_file.write_text(md)
+    df = _load_markdown_table(str(md_file))
+    assert list(df.columns) == headers
+    assert len(df) == num_rows
+
+
+@given(
+    headers=st.lists(_header_st, min_size=2, max_size=5, unique=True),
+)
+@settings(max_examples=20)
+def test_load_markdown_table_no_data_rows_property(tmp_path_factory, headers):
+    header_line = "| " + " | ".join(headers) + " |"
+    sep_line = "| " + " | ".join("---" for _ in headers) + " |"
+    md = header_line + "\n" + sep_line + "\n"
+    md_file = tmp_path_factory.mktemp("md") / "table.md"
+    md_file.write_text(md)
+    with pytest.raises(ValueError, match="no data rows"):
+        _load_markdown_table(str(md_file))
