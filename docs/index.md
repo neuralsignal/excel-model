@@ -83,6 +83,6 @@ number_format_number: '#,##0.00'
 
 ## Security
 
-The `custom` formula type validates user-supplied formulas before writing them to the workbook. Formulas containing dangerous patterns that could enable Excel formula injection (DDE, WEBSERVICE, IMPORTDATA, CALL, EXEC, FILTERXML, REGISTER.ID, and pipe-based DDE invocations) are rejected with a `FormulaInjectionError`. Standard Excel functions (SUM, IF, ROUND, etc.) are allowed.
+The `custom` formula type validates user-supplied formulas before writing them to the workbook. Formulas containing dangerous patterns that could enable Excel formula injection (CMD, DDE, DDEAUTO, WEBSERVICE, IMPORTDATA, IMPORTFEED, IMPORTHTML, IMPORTRANGE, IMPORTXML, CALL, EXEC, FILTERXML, HYPERLINK, REGISTER.ID, RTD, and pipe-based DDE invocations) are rejected with a `FormulaInjectionError`. Standard Excel functions (SUM, IF, ROUND, etc.) are allowed.
 
 See the [API Reference](api/spec.md) for full Python API documentation.
