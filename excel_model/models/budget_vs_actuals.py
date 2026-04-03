@@ -9,6 +9,7 @@ from excel_model.loader import InputData
 from excel_model.models._sheet_builder import (
     build_assumptions_sheet,
     build_inputs_sheet,
+    build_model_header,
     group_line_items_by_section,
 )
 from excel_model.named_ranges import get_col_letter
@@ -63,17 +64,9 @@ def _build_bva_model_sheet(
         first_proj_col_letter = ""
         last_proj_col_letter = ""
 
-    # Row 1: Title
-    ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
-    title_cell = ws["A1"]
-    title_cell.value = spec.title
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    build_model_header(ws, spec.title, total_cols, style, "Line Item", 12, "B4")
 
     # Row 2: Period group headers (merged across sub-cols)
-    label_header = ws.cell(row=2, column=1, value="Line Item")
-    apply_header_style(label_header, style)
-
     for p_idx, period in enumerate(periods):
         base_col = 2 + p_idx * n_sub_cols
         end_col = base_col + n_sub_cols - 1
@@ -89,12 +82,6 @@ def _build_bva_model_sheet(
         for g_idx, group in enumerate(groups):
             cell = ws.cell(row=3, column=base_col + g_idx, value=group.label)
             apply_header_style(cell, style)
-
-    ws.column_dimensions["A"].width = 28
-    for col_idx in range(2, total_cols + 1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = 12
-
-    ws.freeze_panes = "B4"
 
     # Assign row numbers
     current_row = 4

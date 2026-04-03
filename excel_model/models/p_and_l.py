@@ -10,6 +10,7 @@ from excel_model.loader import InputData
 from excel_model.models._sheet_builder import (
     build_assumptions_sheet,
     build_inputs_sheet,
+    build_model_header,
     group_line_items_by_section,
 )
 from excel_model.named_ranges import get_col_letter
@@ -66,17 +67,9 @@ def _build_model_sheet(
         first_proj_col_letter = ""
         last_proj_col_letter = ""
 
-    # Row 1: Title header
-    ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
-    title_cell = ws["A1"]
-    title_cell.value = spec.title
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    build_model_header(ws, spec.title, total_cols, style, "Line Item", 14, "B3")
 
     # Row 2: Period labels
-    label_header = ws.cell(row=2, column=1, value="Line Item")
-    apply_header_style(label_header, style)
-
     for col_idx, period in enumerate(periods, start=2):
         cell = ws.cell(row=2, column=col_idx, value=period.label)
         if period.is_history:
@@ -84,13 +77,6 @@ def _build_model_sheet(
             cell.font = Font(name=style.font_name, size=style.font_size, bold=True)
         else:
             apply_header_style(cell, style)
-
-    ws.column_dimensions["A"].width = 28
-    for col_idx in range(2, total_cols + 1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = 14
-
-    # Freeze panes: below row 2, right of col A
-    ws.freeze_panes = "B3"
 
     # First pass: assign row numbers to all line items
     current_row = 3

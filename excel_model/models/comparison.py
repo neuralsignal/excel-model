@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import CellContext, render_formula
 from excel_model.loader import InputData
-from excel_model.models._sheet_builder import build_assumptions_sheet, group_line_items_by_section
+from excel_model.models._sheet_builder import build_assumptions_sheet, build_model_header, group_line_items_by_section
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import ModelSpec
 from excel_model.style import (
@@ -44,26 +44,12 @@ def _build_comparison_model_sheet(
     n_entities = len(entities)
     total_cols = 1 + n_entities  # label col + one per entity
 
-    # Row 1: Title header
-    ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
-    title_cell = ws["A1"]
-    title_cell.value = spec.title
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    build_model_header(ws, spec.title, total_cols, style, "Metric", 16, "B3")
 
-    # Row 2: "Metric" | entity labels
-    label_header = ws.cell(row=2, column=1, value="Metric")
-    apply_header_style(label_header, style)
-
+    # Row 2: Entity labels
     for e_idx, entity in enumerate(entities):
         cell = ws.cell(row=2, column=2 + e_idx, value=entity.label)
         apply_header_style(cell, style)
-
-    ws.column_dimensions["A"].width = 28
-    for col_idx in range(2, total_cols + 1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = 16
-
-    ws.freeze_panes = "B3"
 
     # Build entity_col_range for RANK/MAX formulas (row placeholder replaced per row)
     first_entity_col = get_col_letter(2)
