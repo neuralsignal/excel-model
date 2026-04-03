@@ -213,16 +213,29 @@ def _validate_drivers(spec: ModelSpec) -> list[str]:
 def _validate_line_items(spec: ModelSpec) -> list[str]:
     """Validate line item key uniqueness, formula types, required params, and cross-references."""
     errors: list[str] = []
+    errors.extend(_check_key_uniqueness(spec))
+    errors.extend(_check_formula_params(spec))
+    errors.extend(_check_cross_refs(spec))
+    return errors
 
-    line_item_keys = {li.key for li in spec.line_items}
-    valid_formula_types = {ft.value for ft in FormulaType}
 
+def _check_key_uniqueness(spec: ModelSpec) -> list[str]:
+    """Check for duplicate line item keys."""
+    errors: list[str] = []
     seen_keys: set[str] = set()
     for li in spec.line_items:
         if li.key in seen_keys:
             errors.append(f"Duplicate line item key: {li.key!r}")
         seen_keys.add(li.key)
+    return errors
 
+
+def _check_formula_params(spec: ModelSpec) -> list[str]:
+    """Validate formula types, required params, and custom formula injection."""
+    errors: list[str] = []
+    valid_formula_types = {ft.value for ft in FormulaType}
+
+    for li in spec.line_items:
         if li.formula_type not in valid_formula_types:
             errors.append(
                 f"Line item {li.key!r} has unknown formula_type: {li.formula_type!r}. "
@@ -237,7 +250,6 @@ def _validate_line_items(spec: ModelSpec) -> list[str]:
                         f"Line item {li.key!r} (formula_type={li.formula_type!r}) missing required param {param!r}"
                     )
 
-        # Validate custom formulas for injection patterns
         if li.formula_type == "custom" and "formula" in li.formula_params:
             raw = li.formula_params["formula"]
             if isinstance(raw, str):
@@ -246,6 +258,15 @@ def _validate_line_items(spec: ModelSpec) -> list[str]:
                 except FormulaInjectionError as e:
                     errors.append(str(e))
 
+    return errors
+
+
+def _check_cross_refs(spec: ModelSpec) -> list[str]:
+    """Validate that line item cross-references point to existing keys."""
+    errors: list[str] = []
+    line_item_keys = {li.key for li in spec.line_items}
+
+    for li in spec.line_items:
         for param_name, param_value in li.formula_params.items():
             if (
                 param_name in _KEY_REF_PARAMS
