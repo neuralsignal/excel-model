@@ -1,5 +1,7 @@
 """Shared utilities for building Assumptions, Inputs, and Model sheets."""
 
+from __future__ import annotations
+
 from openpyxl import Workbook
 from openpyxl.cell import Cell
 from openpyxl.styles import Alignment, Border, Side
@@ -21,6 +23,40 @@ from excel_model.style import (
     get_number_format,
 )
 from excel_model.time_engine import Period
+
+
+def build_model_header(
+    ws: Worksheet,
+    title: str,
+    total_cols: int,
+    style: StyleConfig,
+    label_col_header: str,
+    data_col_width: int,
+    freeze_cell: str,
+) -> None:
+    """Build the standard model sheet header rows shared by all builders.
+
+    Handles: row-1 title merge + style, row-2 label column header,
+    column-A width, data-column widths, and freeze panes.
+    """
+    # Row 1: Title
+    ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
+    title_cell = ws["A1"]
+    title_cell.value = title
+    apply_header_style(title_cell, style)
+    ws.row_dimensions[1].height = 20
+
+    # Row 2, column 1: Label header
+    label_header = ws.cell(row=2, column=1, value=label_col_header)
+    apply_header_style(label_header, style)
+
+    # Column widths
+    ws.column_dimensions["A"].width = 28
+    for col_idx in range(2, total_cols + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = data_col_width
+
+    # Freeze panes
+    ws.freeze_panes = freeze_cell
 
 
 def group_line_items_by_section(

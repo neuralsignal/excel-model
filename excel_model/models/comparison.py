@@ -11,10 +11,9 @@ from excel_model.models._sheet_builder import (
     apply_label_style,
     assign_row_map,
     build_assumptions_sheet,
+    build_model_header,
     group_line_items_by_section,
-    set_column_widths,
     write_section_header,
-    write_title_row,
 )
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import ModelSpec
@@ -61,10 +60,8 @@ def _build_comparison_model_sheet(
     n_entities = len(entities)
     total_cols = 1 + n_entities
 
-    write_title_row(ws, spec.title, total_cols, style)
+    build_model_header(ws, spec.title, total_cols, style, "Metric", 16, "B3")
     _write_entity_headers(ws, spec, style)
-    set_column_widths(ws, total_cols, 28, 16)
-    ws.freeze_panes = "B3"
 
     # Build entity_col_range for RANK/MAX formulas
     first_entity_col = get_col_letter(2)

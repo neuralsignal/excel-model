@@ -12,12 +12,11 @@ from excel_model.models._sheet_builder import (
     assign_row_map,
     build_assumptions_sheet,
     build_inputs_sheet,
+    build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
-    set_column_widths,
     write_history_border,
     write_section_header,
-    write_title_row,
 )
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import ModelSpec
@@ -54,11 +53,9 @@ def _build_model_sheet(
     total_cols = 1 + len(periods)
     first_proj_col_letter, last_proj_col_letter = compute_proj_col_range(periods, 1, 2)
 
-    write_title_row(ws, spec.title, total_cols, style)
+    build_model_header(ws, spec.title, total_cols, style, "Line Item", 14, "B3")
 
     # Row 2: Period labels
-    label_header = ws.cell(row=2, column=1, value="Line Item")
-    apply_header_style(label_header, style)
     for col_idx, period in enumerate(periods, start=2):
         cell = ws.cell(row=2, column=col_idx, value=period.label)
         if period.is_history:
@@ -66,9 +63,6 @@ def _build_model_sheet(
             cell.font = Font(name=style.font_name, size=style.font_size, bold=True)
         else:
             apply_header_style(cell, style)
-
-    set_column_widths(ws, total_cols, 28, 14)
-    ws.freeze_panes = "B3"
 
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 3)

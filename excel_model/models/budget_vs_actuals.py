@@ -11,11 +11,10 @@ from excel_model.models._sheet_builder import (
     assign_row_map,
     build_assumptions_sheet,
     build_inputs_sheet,
+    build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
-    set_column_widths,
     write_section_header,
-    write_title_row,
 )
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import ModelSpec
@@ -96,10 +95,8 @@ def _build_bva_model_sheet(
 
     first_proj_col_letter, last_proj_col_letter = compute_proj_col_range(periods, n_sub_cols, 2)
 
-    write_title_row(ws, spec.title, total_cols, style)
+    build_model_header(ws, spec.title, total_cols, style, "Line Item", 12, "B4")
     _write_bva_headers(ws, periods, groups, n_sub_cols, total_cols, style)
-    set_column_widths(ws, total_cols, 28, 12)
-    ws.freeze_panes = "B4"
 
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 4)
