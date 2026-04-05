@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3](https://github.com/neuralsignal/excel-model/compare/v0.1.2...v0.1.3) (2026-04-05)
+
+
+### Bug Fixes
+
+* add HYPERLINK and RTD to formula injection blocklist ([#53](https://github.com/neuralsignal/excel-model/issues/53)) ([13b2b50](https://github.com/neuralsignal/excel-model/commit/13b2b50f8f3f14d893cf2efaed90668f104a2f96))
+* auto-fix CI failures (attempt 1) ([5abe174](https://github.com/neuralsignal/excel-model/commit/5abe174e6c449e637b37d812b49fae28900c6b72))
+* block INDIRECT, ENCODEURL, and UNC paths in formula injection filter ([#72](https://github.com/neuralsignal/excel-model/issues/72)) ([79f6aeb](https://github.com/neuralsignal/excel-model/commit/79f6aeba1525ac1b0de942aeca8b1e4019583f7a))
+* pin requests &gt;=2.33.0 to resolve CVE-2026-25645 ([#67](https://github.com/neuralsignal/excel-model/issues/67)) ([73b87af](https://github.com/neuralsignal/excel-model/commit/73b87afcf6b10dc5424ffeabde31b63cd9d77c21))
+* pin requests &gt;=2.33.0 to resolve CVE-2026-25645 (predictable temp ([abb1807](https://github.com/neuralsignal/excel-model/commit/abb18077240f9dda711a20369e83044a41f361b0))
+* propagate ValueError from generate_periods in describe command ([#78](https://github.com/neuralsignal/excel-model/issues/78)) ([d666ac4](https://github.com/neuralsignal/excel-model/commit/d666ac45a1fb3f1d9778d188ed9855d410e5afe4))
+* resolve merge conflicts with main (PR [#79](https://github.com/neuralsignal/excel-model/issues/79) refactoring) ([d4c31b1](https://github.com/neuralsignal/excel-model/commit/d4c31b1c904c00712ece09fe7c0751d4a5c5df7d))
+
+
+### Documentation
+
+* sync documentation with codebase ([d243529](https://github.com/neuralsignal/excel-model/commit/d2435299764d38276afd3d7c61db2b4bf52f1315))
+* sync documentation with codebase ([6c91c08](https://github.com/neuralsignal/excel-model/commit/6c91c088f780869c5216441d894559cac801ef55))
+* sync documentation with codebase changes ([077d624](https://github.com/neuralsignal/excel-model/commit/077d624ad2316484d430fe51d18990f5f1f99eb4))
+* sync documentation with codebase changes ([1b654b9](https://github.com/neuralsignal/excel-model/commit/1b654b9e1008877fbae80c1037daadcf1827d5a1))
+
 ## [0.1.2](https://github.com/neuralsignal/excel-model/compare/v0.1.1...v0.1.2) (2026-03-20)
 
 
