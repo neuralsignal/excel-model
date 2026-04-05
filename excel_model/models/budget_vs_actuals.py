@@ -98,7 +98,6 @@ def _build_bva_model_sheet(
     build_model_header(ws, spec.title, total_cols, style, "Line Item", 12, "B4")
     _write_bva_headers(ws, periods, groups, n_sub_cols, total_cols, style)
 
-
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 4)
 

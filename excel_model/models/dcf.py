@@ -148,7 +148,6 @@ def _build_dcf_model_sheet(
         else:
             apply_header_style(cell, style)
 
-
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 3)
 
