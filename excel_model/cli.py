@@ -196,15 +196,12 @@ def describe(spec: str, output_format: str) -> None:
     # Build description
     from excel_model.time_engine import generate_periods
 
-    try:
-        periods = generate_periods(
-            start_period=loaded_spec.start_period,
-            n_periods=loaded_spec.n_periods,
-            n_history=loaded_spec.n_history_periods,
-            granularity=loaded_spec.granularity,
-        )
-    except ValueError:
-        periods = []
+    periods = generate_periods(
+        start_period=loaded_spec.start_period,
+        n_periods=loaded_spec.n_periods,
+        n_history=loaded_spec.n_history_periods,
+        granularity=loaded_spec.granularity,
+    )
 
     # Group assumptions by group
     assumption_groups: dict[str, list] = {}
