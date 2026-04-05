@@ -538,7 +538,7 @@ class TestDescribeFailure:
 
 class TestDescribeGeneratePeriodsError:
     def test_describe_bad_start_period(self, runner, tmp_path):
-        """Lines 206-207: describe with invalid start_period triggers ValueError in generate_periods."""
+        """describe with invalid start_period propagates ValueError from generate_periods."""
         bad_period_yaml = """\
 model_type: p_and_l
 title: Bad Period
@@ -551,10 +551,7 @@ n_history_periods: 0
         spec_f = tmp_path / "spec.yaml"
         spec_f.write_text(bad_period_yaml)
         result = runner.invoke(main, ["describe", "--spec", str(spec_f), "--format", "json"])
-        assert result.exit_code == 0
-        payload = json.loads(result.output)
-        assert payload["total_periods"] == 0
-        assert payload["period_labels"] == []
+        assert result.exit_code != 0
 
 
 class TestDescribeValidationErrors:

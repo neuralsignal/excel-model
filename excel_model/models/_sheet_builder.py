@@ -1,21 +1,25 @@
-"""Shared utilities for building Assumptions and Inputs sheets."""
+"""Shared utilities for building Assumptions, Inputs, and Model sheets."""
 
 from __future__ import annotations
 
 from openpyxl import Workbook
-from openpyxl.styles import Alignment
+from openpyxl.cell import Cell
+from openpyxl.styles import Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
 from excel_model.loader import InputData
-from excel_model.named_ranges import register_named_range
+from excel_model.named_ranges import get_col_letter, register_named_range
 from excel_model.spec import AssumptionDef, LineItemDef, ModelSpec, ScenarioDef
 from excel_model.style import (
     StyleConfig,
     apply_assumption_sheet_validation,
     apply_header_style,
+    apply_history_col_style,
     apply_normal_style,
     apply_section_header_style,
+    apply_subtotal_style,
+    apply_total_style,
     get_number_format,
 )
 from excel_model.time_engine import Period
@@ -74,6 +78,103 @@ def group_line_items_by_section(
     return sections_order, sections_items
 
 
+def write_title_row(ws: Worksheet, title: str, total_cols: int, style: StyleConfig) -> None:
+    """Write merged title row (row 1) with header styling."""
+    ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
+    cell = ws["A1"]
+    cell.value = title
+    apply_header_style(cell, style)
+    ws.row_dimensions[1].height = 20
+
+
+def assign_row_map(
+    sections_order: list[str],
+    sections_items: dict[str, list[LineItemDef]],
+    start_row: int,
+) -> dict[str, int]:
+    """First-pass row number assignment for all line items."""
+    current_row = start_row
+    row_map: dict[str, int] = {}
+    for section in sections_order:
+        if section:
+            current_row += 1
+        for li in sections_items[section]:
+            row_map[li.key] = current_row
+            current_row += 1
+    return row_map
+
+
+def write_section_header(
+    ws: Worksheet,
+    section: str,
+    row: int,
+    total_cols: int,
+    style: StyleConfig,
+) -> None:
+    """Write a merged section header row."""
+    ws.merge_cells(f"A{row}:{get_column_letter(total_cols)}{row}")
+    ws[f"A{row}"].value = section
+    apply_section_header_style(ws[f"A{row}"], style)
+
+
+def apply_label_style(cell: Cell, li: LineItemDef, style: StyleConfig) -> None:
+    """Apply normal/subtotal/total style to a line item label cell."""
+    apply_normal_style(cell, style)
+    if li.is_subtotal:
+        apply_subtotal_style(cell, style)
+    elif li.is_total:
+        apply_total_style(cell, style)
+
+
+def apply_data_cell_style(cell: Cell, li: LineItemDef, style: StyleConfig, is_history: bool) -> None:
+    """Apply appropriate style to a data cell based on line item type and history status."""
+    if is_history:
+        apply_history_col_style(cell, style)
+    if li.is_subtotal:
+        apply_subtotal_style(cell, style)
+    elif li.is_total:
+        apply_total_style(cell, style)
+    else:
+        apply_normal_style(cell, style)
+        if is_history:
+            apply_history_col_style(cell, style)
+
+
+def compute_proj_col_range(
+    periods: list[Period],
+    col_multiplier: int,
+    col_offset: int,
+) -> tuple[str, str]:
+    """Compute first/last projection column letters for formula context."""
+    proj = [p for p in periods if not p.is_history]
+    if not proj:
+        return "", ""
+    return (
+        get_col_letter(col_offset + proj[0].index * col_multiplier),
+        get_col_letter(col_offset + proj[-1].index * col_multiplier + col_multiplier - 1),
+    )
+
+
+def set_column_widths(
+    ws: Worksheet,
+    total_cols: int,
+    label_width: float,
+    data_width: float,
+) -> None:
+    """Set column A width and uniform data column widths."""
+    ws.column_dimensions["A"].width = label_width
+    for col_idx in range(2, total_cols + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = data_width
+
+
+def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: int) -> None:
+    """Write thin vertical border at the first projection column."""
+    if n_history > 0:
+        border_col = 2 + n_history
+        if border_col <= total_cols:
+            ws.cell(row=row, column=border_col).border = Border(left=Side(style="thin"))
+
+
 def build_assumptions_sheet(
     wb: Workbook,
     spec: ModelSpec,
@@ -91,12 +192,7 @@ def build_assumptions_sheet(
     else:
         ws = wb.create_sheet(title=sheet_name)
 
-    # Row 1: Title header
-    ws.merge_cells("A1:D1")
-    title_cell = ws["A1"]
-    title_cell.value = f"{spec.title} — Assumptions"
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    write_title_row(ws, f"{spec.title} — Assumptions", 4, style)
 
     # Row 2: Column headers
     headers = ["Parameter", "Named Range", "Value", "Format"]
@@ -119,11 +215,7 @@ def build_assumptions_sheet(
         groups.setdefault(assumption.group, []).append(assumption)
 
     for group_name, assumptions in groups.items():
-        # Section header row
-        ws.merge_cells(f"A{current_row}:D{current_row}")
-        section_cell = ws[f"A{current_row}"]
-        section_cell.value = group_name
-        apply_section_header_style(section_cell, style)
+        write_section_header(ws, group_name, current_row, 4, style)
         current_row += 1
 
         group_start_row = current_row
@@ -179,11 +271,7 @@ def build_drivers_sheet(
     else:
         ws = wb.create_sheet(title=sheet_name)
 
-    ws.merge_cells("A1:D1")
-    title_cell = ws["A1"]
-    title_cell.value = f"{spec.title} — Drivers"
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    write_title_row(ws, f"{spec.title} — Drivers", 4, style)
 
     headers = ["Parameter", "Named Range", "Value", "Format"]
     for col_idx, header in enumerate(headers, start=1):
@@ -201,11 +289,7 @@ def build_drivers_sheet(
     for scenario in scenarios:
         prefix = scenario.name.capitalize()
 
-        # Scenario section header
-        ws.merge_cells(f"A{current_row}:D{current_row}")
-        sec_cell = ws[f"A{current_row}"]
-        sec_cell.value = f"{scenario.label} Drivers"
-        apply_section_header_style(sec_cell, style)
+        write_section_header(ws, f"{scenario.label} Drivers", current_row, 4, style)
         current_row += 1
 
         for driver in spec.drivers:
@@ -255,12 +339,7 @@ def build_inputs_sheet(
     history_periods = [p for p in periods if p.is_history]
     n_cols = 1 + len(history_periods)  # label col + one per history period
 
-    # Row 1: Title header
-    ws.merge_cells(f"A1:{get_column_letter(n_cols)}1")
-    title_cell = ws["A1"]
-    title_cell.value = "Historical Input Data"
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    write_title_row(ws, "Historical Input Data", n_cols, style)
 
     if not history_periods:
         ws["A2"] = "No history periods defined."

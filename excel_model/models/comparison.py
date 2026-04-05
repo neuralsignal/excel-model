@@ -2,21 +2,24 @@
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
-from openpyxl.utils import get_column_letter
 
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import CellContext, render_formula
 from excel_model.loader import InputData
-from excel_model.models._sheet_builder import build_assumptions_sheet, build_model_header, group_line_items_by_section
+from excel_model.models._sheet_builder import (
+    apply_data_cell_style,
+    apply_label_style,
+    assign_row_map,
+    build_assumptions_sheet,
+    build_model_header,
+    group_line_items_by_section,
+    write_section_header,
+)
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import ModelSpec
 from excel_model.style import (
     StyleConfig,
     apply_header_style,
-    apply_normal_style,
-    apply_section_header_style,
-    apply_subtotal_style,
-    apply_total_style,
     get_number_format,
 )
 
@@ -32,6 +35,19 @@ def build_comparison(
     _build_comparison_model_sheet(wb, spec, style)
 
 
+def _write_entity_headers(
+    ws: object,
+    spec: ModelSpec,
+    style: StyleConfig,
+) -> None:
+    """Write entity label headers (row 2)."""
+    label_header = ws.cell(row=2, column=1, value="Metric")  # type: ignore[union-attr]
+    apply_header_style(label_header, style)
+    for e_idx, entity in enumerate(spec.entities):
+        cell = ws.cell(row=2, column=2 + e_idx, value=entity.label)  # type: ignore[union-attr]
+        apply_header_style(cell, style)
+
+
 def _build_comparison_model_sheet(
     wb: Workbook,
     spec: ModelSpec,
@@ -42,40 +58,23 @@ def _build_comparison_model_sheet(
 
     entities = spec.entities
     n_entities = len(entities)
-    total_cols = 1 + n_entities  # label col + one per entity
+    total_cols = 1 + n_entities
 
     build_model_header(ws, spec.title, total_cols, style, "Metric", 16, "B3")
+    _write_entity_headers(ws, spec, style)
 
-    # Row 2: Entity labels
-    for e_idx, entity in enumerate(entities):
-        cell = ws.cell(row=2, column=2 + e_idx, value=entity.label)
-        apply_header_style(cell, style)
-
-    # Build entity_col_range for RANK/MAX formulas (row placeholder replaced per row)
+    # Build entity_col_range for RANK/MAX formulas
     first_entity_col = get_col_letter(2)
     last_entity_col = get_col_letter(1 + n_entities)
 
-    # First pass: assign row numbers
-    current_row = 3
-    row_map: dict[str, int] = {}
-
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
+    row_map = assign_row_map(sections_order, sections_items, 3)
 
-    for section in sections_order:
-        if section:
-            current_row += 1  # section header row
-        for li in sections_items[section]:
-            row_map[li.key] = current_row
-            current_row += 1
-
-    # Second pass: write data
+    # Write data
     current_row = 3
     for section in sections_order:
         if section:
-            ws.merge_cells(f"A{current_row}:{get_column_letter(total_cols)}{current_row}")
-            sec_cell = ws[f"A{current_row}"]
-            sec_cell.value = section
-            apply_section_header_style(sec_cell, style)
+            write_section_header(ws, section, current_row, total_cols, style)
             current_row += 1
 
         for li in sections_items[section]:
@@ -83,13 +82,8 @@ def _build_comparison_model_sheet(
                 raise ExcelModelError(f"Row mismatch for {li.key!r}: expected {current_row}, got {row_map[li.key]}")
 
             label_cell = ws.cell(row=current_row, column=1, value=li.label)
-            apply_normal_style(label_cell, style)
-            if li.is_subtotal:
-                apply_subtotal_style(label_cell, style)
-            elif li.is_total:
-                apply_total_style(label_cell, style)
+            apply_label_style(label_cell, li, style)
 
-            # Build entity_col_range for this row (used by RANK/MAX formulas)
             entity_col_range = f"${first_entity_col}${current_row}:${last_entity_col}${current_row}"
 
             for e_idx, _entity in enumerate(entities):
@@ -123,19 +117,12 @@ def _build_comparison_model_sheet(
                 )
 
                 value = render_formula(li.formula_type, params, ctx)
-
                 cell = ws.cell(row=current_row, column=col_idx, value=value)
 
-                # Format: use percent for ratio-like items, currency otherwise
                 fmt = "percent" if li.formula_type in ("ratio", "index_to_base") else "currency"
                 cell.number_format = get_number_format(fmt, style)
                 cell.alignment = Alignment(horizontal="right")
-
-                apply_normal_style(cell, style)
-                if li.is_subtotal:
-                    apply_subtotal_style(cell, style)
-                elif li.is_total:
-                    apply_total_style(cell, style)
+                apply_data_cell_style(cell, li, style, False)
 
             current_row += 1
 

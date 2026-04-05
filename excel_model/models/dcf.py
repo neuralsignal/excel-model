@@ -1,28 +1,30 @@
 """DCF sheet builder — has its own model sheet builder for NPV_SUM aggregation."""
 
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Border, Font, Side
-from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment, Font
+from openpyxl.worksheet.worksheet import Worksheet
 
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import CellContext, render_formula
 from excel_model.loader import InputData
 from excel_model.models._sheet_builder import (
+    apply_data_cell_style,
+    apply_label_style,
+    assign_row_map,
     build_assumptions_sheet,
     build_inputs_sheet,
     build_model_header,
+    compute_proj_col_range,
     group_line_items_by_section,
+    write_history_border,
+    write_section_header,
 )
 from excel_model.named_ranges import get_col_letter
-from excel_model.spec import ModelSpec
+from excel_model.spec import LineItemDef, ModelSpec
 from excel_model.style import (
     StyleConfig,
     apply_header_style,
     apply_history_col_style,
-    apply_normal_style,
-    apply_section_header_style,
-    apply_subtotal_style,
-    apply_total_style,
     get_number_format,
 )
 from excel_model.time_engine import Period
@@ -41,6 +43,88 @@ def build_dcf(
     _build_dcf_model_sheet(wb, spec, style, periods, inputs_row_map)
 
 
+def _write_npv_sum_cell(
+    ws: Worksheet,
+    li: LineItemDef,
+    row: int,
+    spec: ModelSpec,
+    row_map: dict[str, int],
+    inputs_row_map: dict[str, int],
+    first_proj_col_letter: str,
+    last_proj_col_letter: str,
+    style: StyleConfig,
+) -> None:
+    """Write NPV_SUM formula in the first data column, spanning all projection cols."""
+    first_data_col = 2
+    col_letter = get_col_letter(first_data_col)
+    ctx = CellContext(
+        period_index=0,
+        n_history=spec.n_history_periods,
+        row=row,
+        col=first_data_col,
+        col_letter=col_letter,
+        prior_col_letter="",
+        named_ranges={a.name: a.name for a in spec.assumptions},
+        row_map=row_map,
+        inputs_row_map=inputs_row_map,
+        scenario_prefix="",
+        first_proj_col_letter=first_proj_col_letter,
+        last_proj_col_letter=last_proj_col_letter,
+        entity_col_range="",
+        driver_names=frozenset(),
+    )
+    value = render_formula(li.formula_type, dict(li.formula_params), ctx)
+    cell = ws.cell(row=row, column=first_data_col, value=value)
+    cell.number_format = get_number_format("currency", style)
+    cell.alignment = Alignment(horizontal="right")
+    apply_data_cell_style(cell, li, style, False)
+
+
+def _write_standard_cells(
+    ws: Worksheet,
+    li: LineItemDef,
+    periods: list[Period],
+    spec: ModelSpec,
+    row: int,
+    row_map: dict[str, int],
+    inputs_row_map: dict[str, int],
+    first_proj_col_letter: str,
+    last_proj_col_letter: str,
+    style: StyleConfig,
+) -> None:
+    """Write standard per-column formula cells for a line item."""
+    for col_idx, period in enumerate(periods, start=2):
+        col_letter = get_col_letter(col_idx)
+        prior_col_letter = get_col_letter(col_idx - 1) if col_idx > 2 else ""
+
+        params = dict(li.formula_params)
+        if li.formula_type == "input_ref":
+            params["line_item_key"] = li.key
+
+        ctx = CellContext(
+            period_index=period.index,
+            n_history=spec.n_history_periods,
+            row=row,
+            col=col_idx,
+            col_letter=col_letter,
+            prior_col_letter=prior_col_letter,
+            named_ranges={a.name: a.name for a in spec.assumptions},
+            row_map=row_map,
+            inputs_row_map=inputs_row_map,
+            scenario_prefix="",
+            first_proj_col_letter=first_proj_col_letter,
+            last_proj_col_letter=last_proj_col_letter,
+            entity_col_range="",
+            driver_names=frozenset(),
+        )
+
+        value = render_formula(li.formula_type, params, ctx)
+        cell = ws.cell(row=row, column=col_idx, value=value)
+        cell.number_format = get_number_format("currency", style)
+        cell.alignment = Alignment(horizontal="right")
+        apply_data_cell_style(cell, li, style, period.is_history)
+
+
 def _build_dcf_model_sheet(
     wb: Workbook,
     spec: ModelSpec,
@@ -48,21 +132,10 @@ def _build_dcf_model_sheet(
     periods: list[Period],
     inputs_row_map: dict[str, int],
 ) -> None:
-    """DCF model sheet — renders NPV_SUM only in the first data column,
-    aggregating PV FCFs across ALL projection columns."""
+    """DCF model sheet — renders NPV_SUM only in the first data column."""
     ws = wb.create_sheet(title="Model")
-
-    n_period_cols = len(periods)
-    total_cols = 1 + n_period_cols
-
-    # Compute projection column range
-    proj_periods = [p for p in periods if not p.is_history]
-    if proj_periods:
-        first_proj_col_letter = get_col_letter(2 + proj_periods[0].index)
-        last_proj_col_letter = get_col_letter(2 + proj_periods[-1].index)
-    else:
-        first_proj_col_letter = ""
-        last_proj_col_letter = ""
+    total_cols = 1 + len(periods)
+    first_proj_col_letter, last_proj_col_letter = compute_proj_col_range(periods, 1, 2)
 
     build_model_header(ws, spec.title, total_cols, style, "Line Item", 14, "B3")
 
@@ -75,27 +148,15 @@ def _build_dcf_model_sheet(
         else:
             apply_header_style(cell, style)
 
-    # First pass: assign row numbers
-    current_row = 3
-    row_map: dict[str, int] = {}
 
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
+    row_map = assign_row_map(sections_order, sections_items, 3)
 
-    for section in sections_order:
-        if section:
-            current_row += 1
-        for li in sections_items[section]:
-            row_map[li.key] = current_row
-            current_row += 1
-
-    # Second pass: write data
+    # Write data
     current_row = 3
     for section in sections_order:
         if section:
-            ws.merge_cells(f"A{current_row}:{get_column_letter(total_cols)}{current_row}")
-            sec_cell = ws[f"A{current_row}"]
-            sec_cell.value = section
-            apply_section_header_style(sec_cell, style)
+            write_section_header(ws, section, current_row, total_cols, style)
             current_row += 1
 
         for li in sections_items[section]:
@@ -103,95 +164,33 @@ def _build_dcf_model_sheet(
                 raise ExcelModelError(f"Row mismatch for {li.key!r}: expected {current_row}, got {row_map[li.key]}")
 
             label_cell = ws.cell(row=current_row, column=1, value=li.label)
-            apply_normal_style(label_cell, style)
-            if li.is_subtotal:
-                apply_subtotal_style(label_cell, style)
-            elif li.is_total:
-                apply_total_style(label_cell, style)
+            apply_label_style(label_cell, li, style)
 
-            is_npv_sum = li.formula_type == "npv_sum"
-
-            if is_npv_sum:
-                # NPV_SUM: write formula ONLY in first data column, spanning all projection cols
-                first_data_col = 2
-                col_letter = get_col_letter(first_data_col)
-
-                ctx = CellContext(
-                    period_index=0,
-                    n_history=spec.n_history_periods,
-                    row=current_row,
-                    col=first_data_col,
-                    col_letter=col_letter,
-                    prior_col_letter="",
-                    named_ranges={a.name: a.name for a in spec.assumptions},
-                    row_map=row_map,
-                    inputs_row_map=inputs_row_map,
-                    scenario_prefix="",
-                    first_proj_col_letter=first_proj_col_letter,
-                    last_proj_col_letter=last_proj_col_letter,
-                    entity_col_range="",
-                    driver_names=frozenset(),
+            if li.formula_type == "npv_sum":
+                _write_npv_sum_cell(
+                    ws,
+                    li,
+                    current_row,
+                    spec,
+                    row_map,
+                    inputs_row_map,
+                    first_proj_col_letter,
+                    last_proj_col_letter,
+                    style,
+                )
+            else:
+                _write_standard_cells(
+                    ws,
+                    li,
+                    periods,
+                    spec,
+                    current_row,
+                    row_map,
+                    inputs_row_map,
+                    first_proj_col_letter,
+                    last_proj_col_letter,
+                    style,
                 )
 
-                value = render_formula(li.formula_type, dict(li.formula_params), ctx)
-                cell = ws.cell(row=current_row, column=first_data_col, value=value)
-                cell.number_format = get_number_format("currency", style)
-                cell.alignment = Alignment(horizontal="right")
-                if li.is_total:
-                    apply_total_style(cell, style)
-                elif li.is_subtotal:
-                    apply_subtotal_style(cell, style)
-                else:
-                    apply_normal_style(cell, style)
-            else:
-                # Standard per-column rendering
-                for col_idx, period in enumerate(periods, start=2):
-                    col_letter = get_col_letter(col_idx)
-                    prior_col_letter = get_col_letter(col_idx - 1) if col_idx > 2 else ""
-
-                    params = dict(li.formula_params)
-                    if li.formula_type == "input_ref":
-                        params["line_item_key"] = li.key
-
-                    ctx = CellContext(
-                        period_index=period.index,
-                        n_history=spec.n_history_periods,
-                        row=current_row,
-                        col=col_idx,
-                        col_letter=col_letter,
-                        prior_col_letter=prior_col_letter,
-                        named_ranges={a.name: a.name for a in spec.assumptions},
-                        row_map=row_map,
-                        inputs_row_map=inputs_row_map,
-                        scenario_prefix="",
-                        first_proj_col_letter=first_proj_col_letter,
-                        last_proj_col_letter=last_proj_col_letter,
-                        entity_col_range="",
-                        driver_names=frozenset(),
-                    )
-
-                    value = render_formula(li.formula_type, params, ctx)
-
-                    cell = ws.cell(row=current_row, column=col_idx, value=value)
-                    cell.number_format = get_number_format("currency", style)
-                    cell.alignment = Alignment(horizontal="right")
-
-                    if period.is_history:
-                        apply_history_col_style(cell, style)
-                    if li.is_subtotal:
-                        apply_subtotal_style(cell, style)
-                    elif li.is_total:
-                        apply_total_style(cell, style)
-                    else:
-                        apply_normal_style(cell, style)
-                        if period.is_history:
-                            apply_history_col_style(cell, style)
-
-            # Thin vertical border after last history col
-            if spec.n_history_periods > 0:
-                border_col = 1 + spec.n_history_periods + 1
-                if border_col <= total_cols:
-                    bc = ws.cell(row=current_row, column=border_col)
-                    bc.border = Border(left=Side(style="thin"))
-
+            write_history_border(ws, current_row, spec.n_history_periods, total_cols)
             current_row += 1
