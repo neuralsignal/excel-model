@@ -52,37 +52,36 @@ style = load_style(None)  # uses bundled defaults
 build_workbook(spec=spec, inputs=None, output_path="model.xlsx", style=style)
 ```
 
-### Standalone Data Sheets (no spec required)
+### Standalone Data Sheets
 
 ```python
 from openpyxl import Workbook
 from excel_model.config import load_style
-from excel_model.data_sheet import write_data_sheet, write_sumifs_pivot
+from excel_model import DataSheetDef, SumifsPivotDef, build_data_sheet, build_sumifs_pivot
 
 wb = Workbook()
 del wb["Sheet"]
 style = load_style(None)
 
 # Simple tabular data sheet
-write_data_sheet(
-    wb=wb, sheet_name="DATA",
-    headers=["Name", "Amount"], rows=[["Vendor A", 12345]],
-    style=style, title="My Data",
-    col_widths=[20.0, 14.0], number_formats={1: "#,##0"}, freeze_row=2,
+data_spec = DataSheetDef(
+    sheet_name="DATA", title="My Data",
+    headers=("Name", "Amount"),
+    col_widths=(20.0, 14.0), number_formats={1: "#,##0"}, freeze_row=2,
 )
+build_data_sheet(wb=wb, spec=data_spec, rows=[["Vendor A", 12345]], style=style)
 
 # SUMIFS pivot sheet (formulas reference a source data sheet)
-write_sumifs_pivot(
-    wb=wb, sheet_name="PIVOT",
-    title="Revenue by Hub", style=style,
-    row_label_headers=["Hub"], row_labels=[["Berlin"], ["Munich"]],
-    col_dim_values=[2023, 2024, 2025],
+pivot_spec = SumifsPivotDef(
+    sheet_name="PIVOT", title="Revenue by Hub",
+    row_label_headers=("Hub",), col_dim_values=(2023, 2024, 2025),
     data_sheet="DATA", value_col="B",
-    row_filter_cols=["A"], col_filter_col="C",
+    row_filter_cols=("A",), col_filter_col="C",
     append_total=True, append_yoy=True,
-    col_widths=[28.0, 14.0, 14.0, 14.0, 16.0, 12.0, 12.0],
+    col_widths=(28.0, 14.0, 14.0, 14.0, 16.0, 12.0, 12.0),
     number_format_data="#,##0", number_format_pct="0.0%", freeze_row=2,
 )
+build_sumifs_pivot(wb=wb, spec=pivot_spec, row_labels=[["Berlin"], ["Munich"]], style=style)
 
 wb.save("output.xlsx")
 ```

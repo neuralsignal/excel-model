@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-* add `write_data_sheet` and `write_sumifs_pivot` standalone sheet builders for tabular and SUMIFS-pivot data sheets — no model spec required ([#88](https://github.com/neuralsignal/excel-model/pull/88))
+* refactor data sheet builders to spec-driven architecture: `DataSheetDef`/`SumifsPivotDef` spec dataclasses, `build_data_sheet`/`build_sumifs_pivot` builder functions, input validation with formula injection guards, config-driven alternating row styling ([#88](https://github.com/neuralsignal/excel-model/pull/88))
 
 ## [0.1.3](https://github.com/neuralsignal/excel-model/compare/v0.1.2...v0.1.3) (2026-04-05)
 

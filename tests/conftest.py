@@ -95,4 +95,5 @@ def sample_style():
         number_format_percent="0.0%",
         number_format_integer="#,##0",
         number_format_number="#,##0.00",
+        alt_row_fill_hex="F2F2F2",
     )

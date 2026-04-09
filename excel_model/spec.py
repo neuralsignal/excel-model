@@ -71,6 +71,38 @@ class MetadataDef:
 
 
 @dataclass(frozen=True)
+class DataSheetDef:
+    """Configuration for a tabular data sheet."""
+
+    sheet_name: str
+    title: str
+    headers: tuple[str, ...]
+    col_widths: tuple[float, ...]
+    number_formats: dict[int, str]
+    freeze_row: int
+
+
+@dataclass(frozen=True)
+class SumifsPivotDef:
+    """Configuration for a SUMIFS pivot sheet."""
+
+    sheet_name: str
+    title: str
+    row_label_headers: tuple[str, ...]
+    col_dim_values: tuple[Any, ...]
+    data_sheet: str
+    value_col: str
+    row_filter_cols: tuple[str, ...]
+    col_filter_col: str
+    append_total: bool
+    append_yoy: bool
+    col_widths: tuple[float, ...]
+    number_format_data: str
+    number_format_pct: str
+    freeze_row: int
+
+
+@dataclass(frozen=True)
 class ModelSpec:
     model_type: str
     title: str
