@@ -31,10 +31,15 @@ def wb():
 
 def test_creates_sheet_with_correct_name(wb, style):
     write_data_sheet(
-        wb=wb, sheet_name="TEST_SHEET",
-        headers=["A", "B"], rows=[[1, 2], [3, 4]],
-        style=style, title="Test",
-        col_widths=[15.0, 15.0], number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="TEST_SHEET",
+        headers=["A", "B"],
+        rows=[[1, 2], [3, 4]],
+        style=style,
+        title="Test",
+        col_widths=[15.0, 15.0],
+        number_formats={},
+        freeze_row=2,
     )
     assert "TEST_SHEET" in wb.sheetnames
 
@@ -42,10 +47,15 @@ def test_creates_sheet_with_correct_name(wb, style):
 def test_row_count(wb, style):
     data_rows = [[i, i * 2] for i in range(10)]
     ws = write_data_sheet(
-        wb=wb, sheet_name="RC",
-        headers=["X", "Y"], rows=data_rows,
-        style=style, title="Row Count Test",
-        col_widths=[10.0, 10.0], number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="RC",
+        headers=["X", "Y"],
+        rows=data_rows,
+        style=style,
+        title="Row Count Test",
+        col_widths=[10.0, 10.0],
+        number_formats={},
+        freeze_row=2,
     )
     assert ws.max_row == 2 + len(data_rows)
 
@@ -53,10 +63,15 @@ def test_row_count(wb, style):
 def test_header_values(wb, style):
     headers = ["Hub", "2023", "2024", "Total"]
     write_data_sheet(
-        wb=wb, sheet_name="HDR",
-        headers=headers, rows=[["DE Berlin", 100, 200, 300]],
-        style=style, title="Header Test",
-        col_widths=[20.0, 12.0, 12.0, 14.0], number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="HDR",
+        headers=headers,
+        rows=[["DE Berlin", 100, 200, 300]],
+        style=style,
+        title="Header Test",
+        col_widths=[20.0, 12.0, 12.0, 14.0],
+        number_formats={},
+        freeze_row=2,
     )
     ws = wb["HDR"]
     actual = [ws.cell(row=2, column=c).value for c in range(1, len(headers) + 1)]
@@ -65,10 +80,15 @@ def test_header_values(wb, style):
 
 def test_number_format_applied(wb, style):
     write_data_sheet(
-        wb=wb, sheet_name="FMT",
-        headers=["Name", "Amount"], rows=[["Vendor A", 12345.67]],
-        style=style, title="Format Test",
-        col_widths=[20.0, 14.0], number_formats={1: "#,##0"}, freeze_row=2,
+        wb=wb,
+        sheet_name="FMT",
+        headers=["Name", "Amount"],
+        rows=[["Vendor A", 12345.67]],
+        style=style,
+        title="Format Test",
+        col_widths=[20.0, 14.0],
+        number_formats={1: "#,##0"},
+        freeze_row=2,
     )
     ws = wb["FMT"]
     assert ws.cell(row=3, column=2).number_format == "#,##0"
@@ -76,20 +96,30 @@ def test_number_format_applied(wb, style):
 
 def test_freeze_panes_default(wb, style):
     ws = write_data_sheet(
-        wb=wb, sheet_name="FRZ",
-        headers=["A"], rows=[[1]],
-        style=style, title="Freeze Test",
-        col_widths=[10.0], number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="FRZ",
+        headers=["A"],
+        rows=[[1]],
+        style=style,
+        title="Freeze Test",
+        col_widths=[10.0],
+        number_formats={},
+        freeze_row=2,
     )
     assert ws.freeze_panes == "A3"
 
 
 def test_freeze_panes_custom(wb, style):
     ws = write_data_sheet(
-        wb=wb, sheet_name="FRZ2",
-        headers=["A"], rows=[[1]],
-        style=style, title="Freeze Test",
-        col_widths=[10.0], number_formats={}, freeze_row=1,
+        wb=wb,
+        sheet_name="FRZ2",
+        headers=["A"],
+        rows=[[1]],
+        style=style,
+        title="Freeze Test",
+        col_widths=[10.0],
+        number_formats={},
+        freeze_row=1,
     )
     assert ws.freeze_panes == "A2"
 
@@ -97,10 +127,15 @@ def test_freeze_panes_custom(wb, style):
 def test_col_widths(wb, style):
     widths = [25.0, 12.5, 18.0]
     ws = write_data_sheet(
-        wb=wb, sheet_name="WID",
-        headers=["A", "B", "C"], rows=[],
-        style=style, title="Width Test",
-        col_widths=widths, number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="WID",
+        headers=["A", "B", "C"],
+        rows=[],
+        style=style,
+        title="Width Test",
+        col_widths=widths,
+        number_formats={},
+        freeze_row=2,
     )
     for i, expected in enumerate(widths, start=1):
         assert ws.column_dimensions[get_column_letter(i)].width == expected
@@ -108,31 +143,47 @@ def test_col_widths(wb, style):
 
 def test_title_in_row_1(wb, style):
     ws = write_data_sheet(
-        wb=wb, sheet_name="TTL",
-        headers=["X"], rows=[[42]],
-        style=style, title="My Title",
-        col_widths=[10.0], number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="TTL",
+        headers=["X"],
+        rows=[[42]],
+        style=style,
+        title="My Title",
+        col_widths=[10.0],
+        number_formats={},
+        freeze_row=2,
     )
     assert ws["A1"].value == "My Title"
 
 
 def test_empty_rows(wb, style):
     ws = write_data_sheet(
-        wb=wb, sheet_name="EMPTY",
-        headers=["Col1", "Col2"], rows=[],
-        style=style, title="Empty",
-        col_widths=[10.0, 10.0], number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="EMPTY",
+        headers=["Col1", "Col2"],
+        rows=[],
+        style=style,
+        title="Empty",
+        col_widths=[10.0, 10.0],
+        number_formats={},
+        freeze_row=2,
     )
     assert ws.max_row == 2
 
 
 def test_returns_worksheet(wb, style):
     from openpyxl.worksheet.worksheet import Worksheet
+
     result = write_data_sheet(
-        wb=wb, sheet_name="RET",
-        headers=["A"], rows=[[1]],
-        style=style, title="Return Test",
-        col_widths=[10.0], number_formats={}, freeze_row=2,
+        wb=wb,
+        sheet_name="RET",
+        headers=["A"],
+        rows=[[1]],
+        style=style,
+        title="Return Test",
+        col_widths=[10.0],
+        number_formats={},
+        freeze_row=2,
     )
     assert isinstance(result, Worksheet)
 
@@ -145,7 +196,8 @@ _printable_text = st.text(
     alphabet=st.characters(
         whitelist_categories=("L", "N", "P", "S"),  # letters, numbers, punctuation, symbols
     ),
-    min_size=1, max_size=20,
+    min_size=1,
+    max_size=20,
 )
 
 
@@ -161,10 +213,15 @@ def test_write_data_sheet_row_count_property(headers, n_rows):
     rows = [[None] * len(headers) for _ in range(n_rows)]
     col_widths = [10.0] * len(headers)
     ws = write_data_sheet(
-        wb=workbook, sheet_name="PROP",
-        headers=headers, rows=rows,
-        style=style, title="Property Test",
-        col_widths=col_widths, number_formats={}, freeze_row=2,
+        wb=workbook,
+        sheet_name="PROP",
+        headers=headers,
+        rows=rows,
+        style=style,
+        title="Property Test",
+        col_widths=col_widths,
+        number_formats={},
+        freeze_row=2,
     )
     assert ws.max_row == 2 + n_rows
 
@@ -249,8 +306,10 @@ def test_sumifs_row_labels_written(wb, style):
 def test_sumifs_multi_label_cols(wb, style):
     """Two label columns (Hub × Account) both appear in SUMIFS criteria."""
     ws = write_sumifs_pivot(
-        wb=wb, sheet_name="BY_CAT",
-        title="By Category", style=style,
+        wb=wb,
+        sheet_name="BY_CAT",
+        title="By Category",
+        style=style,
         row_label_headers=["Hub", "Account"],
         row_labels=[["DE Berlin", "Maintenance"], ["DE Berlin", "Licenses"]],
         col_dim_values=[2023, 2024],
@@ -258,9 +317,11 @@ def test_sumifs_multi_label_cols(wb, style):
         value_col="AO",
         row_filter_cols=["AM", "AN"],
         col_filter_col="AJ",
-        append_total=True, append_yoy=False,
+        append_total=True,
+        append_yoy=False,
         col_widths=[28, 22, 14, 14, 16],
-        number_format_data="#,##0", number_format_pct="0.0%",
+        number_format_data="#,##0",
+        number_format_pct="0.0%",
         freeze_row=2,
     )
     formula = ws.cell(row=3, column=3).value  # first data col (C)
@@ -273,18 +334,22 @@ def test_sumifs_multi_label_cols(wb, style):
 def test_sumifs_static_label_not_in_formula(wb, style):
     """Category col (index 1) is static — not in row_filter_cols — so absent from SUMIFS."""
     ws = write_sumifs_pivot(
-        wb=wb, sheet_name="VENDORS",
-        title="Top Vendors", style=style,
+        wb=wb,
+        sheet_name="VENDORS",
+        title="Top Vendors",
+        style=style,
         row_label_headers=["Vendor", "Category"],
         row_labels=[["Microsoft 365 (via reseller)", "Software/SaaS"]],
         col_dim_values=[2023, 2024],
         data_sheet="TRANSACTIONS_LNFW",
         value_col="AO",
-        row_filter_cols=["AQ"],       # only vendor_canonical; Category not filtered
+        row_filter_cols=["AQ"],  # only vendor_canonical; Category not filtered
         col_filter_col="AJ",
-        append_total=True, append_yoy=False,
+        append_total=True,
+        append_yoy=False,
         col_widths=[35, 18, 14, 14, 16],
-        number_format_data="#,##0", number_format_pct="0.0%",
+        number_format_data="#,##0",
+        number_format_pct="0.0%",
         freeze_row=2,
     )
     formula = ws.cell(row=3, column=3).value  # first data col
@@ -316,16 +381,22 @@ def test_sumifs_no_total(wb, style):
 def test_sumifs_yoy_columns(wb, style):
     """YoY columns contain IF formula with ABS."""
     ws = write_sumifs_pivot(
-        wb=wb, sheet_name="YOY",
-        title="YoY Test", style=style,
+        wb=wb,
+        sheet_name="YOY",
+        title="YoY Test",
+        style=style,
         row_label_headers=["Hub"],
         row_labels=[["DE Berlin"]],
         col_dim_values=[2023, 2024, 2025],
         data_sheet="TRANSACTIONS_LNFW",
-        value_col="AO", row_filter_cols=["AM"], col_filter_col="AJ",
-        append_total=True, append_yoy=True,
+        value_col="AO",
+        row_filter_cols=["AM"],
+        col_filter_col="AJ",
+        append_total=True,
+        append_yoy=True,
         col_widths=[28, 14, 14, 14, 16, 12, 12],
-        number_format_data="#,##0", number_format_pct="0.0%",
+        number_format_data="#,##0",
+        number_format_pct="0.0%",
         freeze_row=2,
     )
     # layout: A=Hub, B=2023, C=2024, D=2025, E=Total, F=YoY23→24, G=YoY24→25
@@ -338,9 +409,11 @@ def test_sumifs_yoy_columns(wb, style):
 def test_sumifs_no_yoy(wb, style):
     """When append_yoy=False, no YoY columns after Total."""
     ws = _make_sumifs_sheet(
-        wb, style,
+        wb,
+        style,
         col_dim_values=[2023, 2024],
-        append_total=True, append_yoy=False,
+        append_total=True,
+        append_yoy=False,
         col_widths=[28, 14, 14, 16],
     )
     # 1 label + 2 data + 1 total = 4 cols
@@ -367,16 +440,22 @@ def test_sumifs_number_format_on_data_cells(wb, style):
 
 def test_sumifs_number_format_on_yoy_cells(wb, style):
     ws = write_sumifs_pivot(
-        wb=wb, sheet_name="FMTYOY",
-        title="Fmt YoY", style=style,
+        wb=wb,
+        sheet_name="FMTYOY",
+        title="Fmt YoY",
+        style=style,
         row_label_headers=["Hub"],
         row_labels=[["DE Berlin"]],
         col_dim_values=[2023, 2024],
         data_sheet="TRANSACTIONS_LNFW",
-        value_col="AO", row_filter_cols=["AM"], col_filter_col="AJ",
-        append_total=False, append_yoy=True,
+        value_col="AO",
+        row_filter_cols=["AM"],
+        col_filter_col="AJ",
+        append_total=False,
+        append_yoy=True,
         col_widths=[28, 14, 14, 12],
-        number_format_data="#,##0", number_format_pct="0.0%",
+        number_format_data="#,##0",
+        number_format_pct="0.0%",
         freeze_row=2,
     )
     # layout: A=Hub, B=2023, C=2024, D=YoY23→24

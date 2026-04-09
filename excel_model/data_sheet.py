@@ -16,7 +16,6 @@ from openpyxl.worksheet.worksheet import Worksheet
 from excel_model.models._sheet_builder import write_title_row
 from excel_model.style import StyleConfig, apply_header_style, apply_normal_style
 
-
 _ALT_ROW_FILL = PatternFill(fill_type="solid", fgColor="F2F2F2")
 
 
@@ -63,7 +62,7 @@ def write_data_sheet(
         apply_header_style(cell, style)
 
     for row_idx, row_data in enumerate(rows, start=3):
-        is_alt = (row_idx % 2 == 0)
+        is_alt = row_idx % 2 == 0
         for col_idx, value in enumerate(row_data, start=1):
             cell = ws.cell(row=row_idx, column=col_idx, value=value)
             apply_normal_style(cell, style)
@@ -141,7 +140,6 @@ def write_sumifs_pivot(
     """
     n_label_cols = len(row_label_headers)
     n_data_cols = len(col_dim_values)
-    n_filter_cols = len(row_filter_cols)
 
     # Build header row 2: label headers + year values + optional total + optional yoy
     header_row: list[Any] = list(row_label_headers) + list(col_dim_values)
@@ -149,9 +147,7 @@ def write_sumifs_pivot(
         header_row.append("Total")
     if append_yoy:
         for i in range(n_data_cols - 1):
-            header_row.append(
-                f"YoY {col_dim_values[i]}→{col_dim_values[i + 1]}"
-            )
+            header_row.append(f"YoY {col_dim_values[i]}→{col_dim_values[i + 1]}")
 
     n_total_cols = len(header_row)
     ws = wb.create_sheet(title=sheet_name)
@@ -165,12 +161,12 @@ def write_sumifs_pivot(
         apply_header_style(cell, style)
 
     # Column index helpers (1-based)
-    first_data_col = n_label_cols + 1           # first year column
-    last_data_col = n_label_cols + n_data_cols   # last year column
+    first_data_col = n_label_cols + 1  # first year column
+    last_data_col = n_label_cols + n_data_cols  # last year column
 
     # Rows 3+: data rows
     for row_idx, label_vals in enumerate(row_labels, start=3):
-        is_alt = (row_idx % 2 == 0)
+        is_alt = row_idx % 2 == 0
 
         # Write label columns (static)
         for label_col_idx, label_val in enumerate(label_vals, start=1):
@@ -189,20 +185,14 @@ def write_sumifs_pivot(
             for filter_idx, filter_data_col in enumerate(row_filter_cols):
                 label_col_letter = get_column_letter(filter_idx + 1)  # A, B, C, ...
                 row_criteria_parts.append(
-                    f"{data_sheet}!${filter_data_col}:${filter_data_col},"
-                    f"${label_col_letter}{row_idx}"
+                    f"{data_sheet}!${filter_data_col}:${filter_data_col},${label_col_letter}{row_idx}"
                 )
 
             # Column dimension criterion: relative col, absolute row 2
-            col_dim_criterion = (
-                f"{data_sheet}!${col_filter_col}:${col_filter_col},"
-                f"{data_col_letter}$2"
-            )
+            col_dim_criterion = f"{data_sheet}!${col_filter_col}:${col_filter_col},{data_col_letter}$2"
 
             all_criteria = ",".join(row_criteria_parts + [col_dim_criterion])
-            formula = (
-                f"=SUMIFS({data_sheet}!${value_col}:${value_col},{all_criteria})"
-            )
+            formula = f"=SUMIFS({data_sheet}!${value_col}:${value_col},{all_criteria})"
 
             cell = ws.cell(row=row_idx, column=data_col_idx, value=formula)
             apply_normal_style(cell, style)
@@ -215,9 +205,7 @@ def write_sumifs_pivot(
             total_col_idx = last_data_col + 1
             first_data_col_letter = get_column_letter(first_data_col)
             last_data_col_letter = get_column_letter(last_data_col)
-            total_formula = (
-                f"=SUM({first_data_col_letter}{row_idx}:{last_data_col_letter}{row_idx})"
-            )
+            total_formula = f"=SUM({first_data_col_letter}{row_idx}:{last_data_col_letter}{row_idx})"
             cell = ws.cell(row=row_idx, column=total_col_idx, value=total_formula)
             apply_normal_style(cell, style)
             if is_alt:
