@@ -6,11 +6,10 @@ from openpyxl.utils import get_column_letter
 
 from excel_model.formula_engine import CellContext, render_formula
 from excel_model.loader import InputData
+from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
     apply_label_style,
     assign_row_map,
-    build_assumptions_sheet,
-    build_inputs_sheet,
     build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,

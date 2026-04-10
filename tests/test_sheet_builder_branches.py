@@ -4,7 +4,7 @@ import polars as pl
 from openpyxl import Workbook
 
 from excel_model.loader import InputData
-from excel_model.models._sheet_builder import (
+from excel_model.models._auxiliary_sheets import (
     build_assumptions_sheet,
     build_drivers_sheet,
     build_inputs_sheet,
