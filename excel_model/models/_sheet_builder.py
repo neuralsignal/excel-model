@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from openpyxl import Workbook
 from openpyxl.cell import Cell
 from openpyxl.styles import Alignment, Border, Side
@@ -23,6 +25,19 @@ from excel_model.style import (
     get_number_format,
 )
 from excel_model.time_engine import Period
+
+
+@dataclass(frozen=True)
+class SheetRenderContext:
+    """Shared rendering state passed to model sheet cell-writing functions."""
+
+    row_map: dict[str, int]
+    inputs_row_map: dict[str, int]
+    first_proj_col_letter: str
+    last_proj_col_letter: str
+    n_history: int
+    named_ranges: dict[str, str]
+    style: StyleConfig
 
 
 def build_model_header(
