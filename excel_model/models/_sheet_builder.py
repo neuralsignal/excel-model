@@ -40,11 +40,7 @@ def build_model_header(
     column-A width, data-column widths, and freeze panes.
     """
     # Row 1: Title
-    ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
-    title_cell = ws["A1"]
-    title_cell.value = title
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    write_title_row(ws, title, total_cols, style)
 
     # Row 2, column 1: Label header
     label_header = ws.cell(row=2, column=1, value=label_col_header)
