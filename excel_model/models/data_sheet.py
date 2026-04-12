@@ -214,9 +214,7 @@ def _write_sumifs_data_cells(
         row_criteria_parts: list[str] = []
         for filter_idx, filter_data_col in enumerate(spec.row_filter_cols):
             label_col_letter = get_column_letter(filter_idx + 1)
-            row_criteria_parts.append(
-                f"{sheet_ref}!${filter_data_col}:${filter_data_col},${label_col_letter}{row_idx}"
-            )
+            row_criteria_parts.append(f"{sheet_ref}!${filter_data_col}:${filter_data_col},${label_col_letter}{row_idx}")
 
         col_dim_criterion = f"{sheet_ref}!${spec.col_filter_col}:${spec.col_filter_col},{data_col_letter}$2"
 
