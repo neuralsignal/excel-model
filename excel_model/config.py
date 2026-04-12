@@ -57,6 +57,7 @@ def load_style(style_path: str | None) -> StyleConfig:
         "number_format_percent",
         "number_format_integer",
         "number_format_number",
+        "alt_row_fill_hex",
     ]
     missing = [k for k in required if k not in merged]
     if missing:
@@ -75,4 +76,5 @@ def load_style(style_path: str | None) -> StyleConfig:
         number_format_percent=merged["number_format_percent"],
         number_format_integer=merged["number_format_integer"],
         number_format_number=merged["number_format_number"],
+        alt_row_fill_hex=merged["alt_row_fill_hex"],
     )

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Features
+
+* refactor data sheet builders to spec-driven architecture: `DataSheetDef`/`SumifsPivotDef` spec dataclasses, `build_data_sheet`/`build_sumifs_pivot` builder functions, input validation with formula injection guards, config-driven alternating row styling ([#88](https://github.com/neuralsignal/excel-model/pull/88))
+
+### Bug Fixes
+
+* single-quote `data_sheet` references in SUMIFS formulas so names containing spaces produce valid Excel syntax (e.g. `'My Data'!$AO:$AO`); also annotate `DataSheetDef.number_formats` as `Mapping[int, str]` and narrow `SumifsPivotDef.col_dim_values` to `tuple[str | int | float, ...]` ([#89](https://github.com/neuralsignal/excel-model/pull/89))
+
 ## [0.1.3](https://github.com/neuralsignal/excel-model/compare/v0.1.2...v0.1.3) (2026-04-05)
 
 
@@ -31,12 +41,6 @@ All notable changes to this project will be documented in this file.
 * merge main, fix DRY violation, and update docs for formula injection ([8347faa](https://github.com/neuralsignal/excel-model/commit/8347faaa72bb8e439d778cc71cbc39aba450b041))
 * reject dangerous patterns in custom Excel formulas ([5786891](https://github.com/neuralsignal/excel-model/commit/5786891164bd5dc8ab5ec62c90e0e47ee4240d14))
 * reject dangerous patterns in custom Excel formulas ([78d64c0](https://github.com/neuralsignal/excel-model/commit/78d64c06e9ce8216d6cc07d1b0264efa2119bbf5)), closes [#28](https://github.com/neuralsignal/excel-model/issues/28)
-
-## [Unreleased]
-
-### Security
-
-* Reject dangerous patterns in custom Excel formulas (DDE, WEBSERVICE, IMPORTDATA, CALL, EXEC, etc.) to prevent formula injection attacks. Validation runs at both spec validation and formula rendering time as defense-in-depth. ([#28](https://github.com/neuralsignal/excel-model/issues/28))
 
 ## [0.1.1](https://github.com/neuralsignal/excel-model/compare/v0.1.0...v0.1.1) (2026-03-17)
 
