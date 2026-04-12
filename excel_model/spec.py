@@ -1,5 +1,6 @@
 """Frozen dataclasses for model spec definitions."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -78,18 +79,28 @@ class DataSheetDef:
     title: str
     headers: tuple[str, ...]
     col_widths: tuple[float, ...]
-    number_formats: dict[int, str]
+    number_formats: Mapping[int, str]
     freeze_row: int
 
 
 @dataclass(frozen=True)
 class SumifsPivotDef:
-    """Configuration for a SUMIFS pivot sheet."""
+    """Configuration for a SUMIFS pivot sheet.
+
+    The ``value_col``, ``row_filter_cols``, and ``col_filter_col`` fields are
+    Excel column letters (e.g. ``"AO"``, ``"AM"``) referring to columns on the
+    ``data_sheet`` source worksheet:
+
+    - ``value_col``: column containing the numeric values to sum.
+    - ``row_filter_cols``: columns matched against each row's label values;
+      len(row_filter_cols) must be <= len(row_label_headers).
+    - ``col_filter_col``: column matched against each ``col_dim_values`` header.
+    """
 
     sheet_name: str
     title: str
     row_label_headers: tuple[str, ...]
-    col_dim_values: tuple[Any, ...]
+    col_dim_values: tuple[str | int | float, ...]
     data_sheet: str
     value_col: str
     row_filter_cols: tuple[str, ...]

@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 * refactor data sheet builders to spec-driven architecture: `DataSheetDef`/`SumifsPivotDef` spec dataclasses, `build_data_sheet`/`build_sumifs_pivot` builder functions, input validation with formula injection guards, config-driven alternating row styling ([#88](https://github.com/neuralsignal/excel-model/pull/88))
 
+### Bug Fixes
+
+* single-quote `data_sheet` references in SUMIFS formulas so names containing spaces produce valid Excel syntax (e.g. `'My Data'!$AO:$AO`); also annotate `DataSheetDef.number_formats` as `Mapping[int, str]` and narrow `SumifsPivotDef.col_dim_values` to `tuple[str | int | float, ...]` ([#89](https://github.com/neuralsignal/excel-model/pull/89))
+
 ## [0.1.3](https://github.com/neuralsignal/excel-model/compare/v0.1.2...v0.1.3) (2026-04-05)
 
 

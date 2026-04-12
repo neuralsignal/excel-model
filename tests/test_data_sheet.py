@@ -500,3 +500,33 @@ def test_sumifs_rejects_invalid_spec(wb, style):
     spec = _pivot_spec(value_col="invalid")
     with pytest.raises(SpecValidationError, match="value_col"):
         build_sumifs_pivot(wb=wb, spec=spec, row_labels=[["A"]], style=style)
+
+
+def test_sumifs_quotes_data_sheet_name_with_space(wb, style):
+    """Regression: sheet names with spaces must be single-quoted in formulas.
+
+    Without quoting, ``=SUMIFS(My Data!$AO:$AO,...)`` is invalid Excel. The
+    builder must emit ``'My Data'!$AO:$AO`` so the workbook opens correctly.
+    """
+    import re
+
+    spec = _pivot_spec(data_sheet="My Data")
+    ws = build_sumifs_pivot(wb=wb, spec=spec, row_labels=[["DE Berlin"]], style=style)
+    formula = ws.cell(row=3, column=2).value
+    assert "'My Data'!$AO:$AO" in formula
+    assert "'My Data'!$AM:$AM" in formula
+    assert "'My Data'!$AJ:$AJ" in formula
+    # The sheet name must never appear without its surrounding single quotes.
+    assert re.search(r"(?<!')My Data!", formula) is None
+
+
+def test_sumifs_quotes_simple_data_sheet_name(wb, style):
+    """Sheet names without spaces are also single-quoted — always-quote is valid Excel."""
+    ws = build_sumifs_pivot(
+        wb=wb,
+        spec=_pivot_spec(),
+        row_labels=[["DE Berlin"]],
+        style=style,
+    )
+    formula = ws.cell(row=3, column=2).value
+    assert "'TRANSACTIONS_LNFW'!$AO:$AO" in formula

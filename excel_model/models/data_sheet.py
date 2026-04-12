@@ -27,6 +27,17 @@ from excel_model.style import (
 )
 
 
+def _quote_sheet_ref(name: str) -> str:
+    """Return name single-quoted for safe use in an Excel formula sheet reference.
+
+    Excel requires single quotes around sheet names that contain spaces or other
+    non-alphanumeric characters (e.g. ``'My Sheet'!A1``). The validator already
+    rejects single quotes and other unsafe characters, so unconditional quoting
+    is safe and keeps formulas consistent for every sheet name.
+    """
+    return f"'{name}'"
+
+
 def build_data_sheet(
     wb: Workbook,
     spec: DataSheetDef,
@@ -195,6 +206,7 @@ def _write_sumifs_data_cells(
     style: StyleConfig,
 ) -> None:
     """Write SUMIFS formula cells for one data row."""
+    sheet_ref = _quote_sheet_ref(spec.data_sheet)
     for data_col_offset in range(n_data_cols):
         data_col_idx = first_data_col + data_col_offset
         data_col_letter = get_column_letter(data_col_idx)
@@ -203,13 +215,13 @@ def _write_sumifs_data_cells(
         for filter_idx, filter_data_col in enumerate(spec.row_filter_cols):
             label_col_letter = get_column_letter(filter_idx + 1)
             row_criteria_parts.append(
-                f"{spec.data_sheet}!${filter_data_col}:${filter_data_col},${label_col_letter}{row_idx}"
+                f"{sheet_ref}!${filter_data_col}:${filter_data_col},${label_col_letter}{row_idx}"
             )
 
-        col_dim_criterion = f"{spec.data_sheet}!${spec.col_filter_col}:${spec.col_filter_col},{data_col_letter}$2"
+        col_dim_criterion = f"{sheet_ref}!${spec.col_filter_col}:${spec.col_filter_col},{data_col_letter}$2"
 
         all_criteria = ",".join(row_criteria_parts + [col_dim_criterion])
-        formula = f"=SUMIFS({spec.data_sheet}!${spec.value_col}:${spec.value_col},{all_criteria})"
+        formula = f"=SUMIFS({sheet_ref}!${spec.value_col}:${spec.value_col},{all_criteria})"
 
         cell = ws.cell(row=row_idx, column=data_col_idx, value=formula)
         apply_normal_style(cell, style)
