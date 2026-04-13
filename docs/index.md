@@ -69,10 +69,11 @@ All keys are required when providing a custom style file; user values are deep-m
 ```yaml
 header_fill_hex: "1F3864"
 header_font_color: "FFFFFF"
-subtotal_fill_hex: "D9E1F2"
-total_fill_hex: "BDD7EE"
+subtotal_fill_hex: "D6E4F0"
+total_fill_hex: "AED6F1"
 history_col_fill_hex: "F2F2F2"
-section_header_fill_hex: "E2EFDA"
+section_header_fill_hex: "E8F4FD"
+alt_row_fill_hex: "F2F2F2"
 font_name: "Calibri"
 font_size: 10
 number_format_currency: '#,##0'
