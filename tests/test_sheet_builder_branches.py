@@ -1,5 +1,7 @@
 """Tests for _sheet_builder existing-sheet branches and build_inputs_sheet data path."""
 
+from unittest.mock import patch
+
 import polars as pl
 from openpyxl import Workbook
 
@@ -9,7 +11,8 @@ from excel_model.models._auxiliary_sheets import (
     build_drivers_sheet,
     build_inputs_sheet,
 )
-from excel_model.spec import DriverDef, InputsDef, ModelSpec, ScenarioDef
+from excel_model.models._sheet_builder import apply_data_cell_style
+from excel_model.spec import DriverDef, InputsDef, LineItemDef, ModelSpec, ScenarioDef
 from excel_model.time_engine import Period
 
 
@@ -153,3 +156,63 @@ def test_build_inputs_sheet_writes_history_data(sample_style):
     assert ws.cell(row=cogs_row, column=1).value == "cogs"
     assert ws.cell(row=cogs_row, column=2).value == 40.0  # 2023
     assert ws.cell(row=cogs_row, column=3).value == 80.0  # 2024
+
+
+class TestApplyDataCellStyleHistoryCallCount:
+    """Regression tests: apply_history_col_style must be called exactly once per history cell."""
+
+    def _make_line_item(self, is_subtotal: bool, is_total: bool) -> LineItemDef:
+        return LineItemDef(
+            key="test",
+            label="Test",
+            formula_type="literal",
+            formula_params={},
+            is_subtotal=is_subtotal,
+            is_total=is_total,
+            section="",
+            format="",
+        )
+
+    @patch("excel_model.models._sheet_builder.apply_history_col_style")
+    def test_normal_history_cell_calls_history_style_once(self, mock_history, sample_style):
+        wb = Workbook()
+        ws = wb.active
+        cell = ws.cell(row=1, column=1, value=100)
+        li = self._make_line_item(is_subtotal=False, is_total=False)
+
+        apply_data_cell_style(cell, li, sample_style, is_history=True)
+
+        assert mock_history.call_count == 1
+
+    @patch("excel_model.models._sheet_builder.apply_history_col_style")
+    def test_subtotal_history_cell_does_not_call_history_style(self, mock_history, sample_style):
+        wb = Workbook()
+        ws = wb.active
+        cell = ws.cell(row=1, column=1, value=100)
+        li = self._make_line_item(is_subtotal=True, is_total=False)
+
+        apply_data_cell_style(cell, li, sample_style, is_history=True)
+
+        assert mock_history.call_count == 0
+
+    @patch("excel_model.models._sheet_builder.apply_history_col_style")
+    def test_total_history_cell_does_not_call_history_style(self, mock_history, sample_style):
+        wb = Workbook()
+        ws = wb.active
+        cell = ws.cell(row=1, column=1, value=100)
+        li = self._make_line_item(is_subtotal=False, is_total=True)
+
+        apply_data_cell_style(cell, li, sample_style, is_history=True)
+
+        assert mock_history.call_count == 0
+
+    @patch("excel_model.models._sheet_builder.apply_history_col_style")
+    def test_non_history_cell_does_not_call_history_style(self, mock_history, sample_style):
+        wb = Workbook()
+        ws = wb.active
+        cell = ws.cell(row=1, column=1, value=100)
+        li = self._make_line_item(is_subtotal=False, is_total=False)
+
+        apply_data_cell_style(cell, li, sample_style, is_history=False)
+
+        assert mock_history.call_count == 0

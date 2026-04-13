@@ -21,6 +21,7 @@ class StyleConfig:
     number_format_percent: str
     number_format_integer: str
     number_format_number: str
+    alt_row_fill_hex: str
 
 
 def _make_fill(hex_color: str) -> PatternFill:
@@ -73,6 +74,10 @@ def apply_section_header_style(cell: Cell, config: StyleConfig) -> None:
 
 def apply_history_col_style(cell: Cell, config: StyleConfig) -> None:
     cell.fill = _make_fill(config.history_col_fill_hex)
+
+
+def apply_alt_row_style(cell: Cell, config: StyleConfig) -> None:
+    cell.fill = _make_fill(config.alt_row_fill_hex)
 
 
 def apply_normal_style(cell: Cell, config: StyleConfig) -> None:

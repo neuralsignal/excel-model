@@ -8,7 +8,7 @@ from openpyxl.styles import Alignment
 from excel_model.loader import InputData
 from excel_model.models._sheet_builder import write_section_header, write_title_row
 from excel_model.named_ranges import register_named_range
-from excel_model.spec import ModelSpec, ScenarioDef
+from excel_model.spec import AssumptionDef, ModelSpec, ScenarioDef
 from excel_model.style import (
     StyleConfig,
     apply_assumption_sheet_validation,
@@ -54,7 +54,7 @@ def build_assumptions_sheet(
     assumption_rows: dict[str, int] = {}
 
     # Group assumptions by group
-    groups: dict[str, list] = {}
+    groups: dict[str, list[AssumptionDef]] = {}
     for assumption in spec.assumptions:
         groups.setdefault(assumption.group, []).append(assumption)
 

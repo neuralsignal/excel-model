@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from openpyxl.cell import Cell
 from openpyxl.styles import Border, Side
 from openpyxl.utils import get_column_letter
@@ -21,6 +23,19 @@ from excel_model.style import (
 from excel_model.time_engine import Period
 
 
+@dataclass(frozen=True)
+class SheetRenderContext:
+    """Shared rendering state passed to model sheet cell-writing functions."""
+
+    row_map: dict[str, int]
+    inputs_row_map: dict[str, int]
+    first_proj_col_letter: str
+    last_proj_col_letter: str
+    n_history: int
+    named_ranges: dict[str, str]
+    style: StyleConfig
+
+
 def build_model_header(
     ws: Worksheet,
     title: str,
@@ -36,11 +51,7 @@ def build_model_header(
     column-A width, data-column widths, and freeze panes.
     """
     # Row 1: Title
-    ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
-    title_cell = ws["A1"]
-    title_cell.value = title
-    apply_header_style(title_cell, style)
-    ws.row_dimensions[1].height = 20
+    write_title_row(ws, title, total_cols, style)
 
     # Row 2, column 1: Label header
     label_header = ws.cell(row=2, column=1, value=label_col_header)
@@ -124,8 +135,6 @@ def apply_label_style(cell: Cell, li: LineItemDef, style: StyleConfig) -> None:
 
 def apply_data_cell_style(cell: Cell, li: LineItemDef, style: StyleConfig, is_history: bool) -> None:
     """Apply appropriate style to a data cell based on line item type and history status."""
-    if is_history:
-        apply_history_col_style(cell, style)
     if li.is_subtotal:
         apply_subtotal_style(cell, style)
     elif li.is_total:
