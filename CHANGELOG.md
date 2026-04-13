@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4](https://github.com/neuralsignal/excel-model/compare/v0.1.3...v0.1.4) (2026-04-13)
+
+
+### Bug Fixes
+
+* auto-fix CI failures (attempt 1) ([9fbae21](https://github.com/neuralsignal/excel-model/commit/9fbae21ae74f39e4eccb6d50a8856db11841cd70))
+* lint data_sheet.py and update docs for write_data_sheet/write_sumifs_pivot ([9785252](https://github.com/neuralsignal/excel-model/commit/9785252e781235ca374979bb9e9bbf060dafdf0c))
+* quote data_sheet references in SUMIFS formulas ([924a814](https://github.com/neuralsignal/excel-model/commit/924a814f7f00dd43ced3025226c7ac077ad1cac7))
+* remove duplicate apply_history_col_style call in apply_data_cell_style ([#92](https://github.com/neuralsignal/excel-model/issues/92)) ([182ea55](https://github.com/neuralsignal/excel-model/commit/182ea5544810ffcf1afb1c4eceeda546d024a88b))
+
+
+### Documentation
+
+* sync documentation with codebase ([8beb1df](https://github.com/neuralsignal/excel-model/commit/8beb1df015fac8ee5003dc04630e7af6156574de))
+* sync documentation with codebase changes ([e2d7028](https://github.com/neuralsignal/excel-model/commit/e2d70287f39d858798fe8399eea3255a149e5052))
+
 ## [Unreleased]
 
 ### Features
