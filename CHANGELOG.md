@@ -12,6 +12,10 @@ All notable changes to this project will be documented in this file.
 
 * single-quote `data_sheet` references in SUMIFS formulas so names containing spaces produce valid Excel syntax (e.g. `'My Data'!$AO:$AO`); also annotate `DataSheetDef.number_formats` as `Mapping[int, str]` and narrow `SumifsPivotDef.col_dim_values` to `tuple[str | int | float, ...]` ([#89](https://github.com/neuralsignal/excel-model/pull/89))
 
+### Chores
+
+* track CVE-2026-4539 (pygments 2.19.2 ReDoS in `AdlLexer`) in `SECURITY.md`; no upstream fix available at audit time, low severity, not reachable from project code ([#68](https://github.com/neuralsignal/excel-model/issues/68))
+
 ## [0.1.3](https://github.com/neuralsignal/excel-model/compare/v0.1.2...v0.1.3) (2026-04-05)
 
 
