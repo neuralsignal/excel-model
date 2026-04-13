@@ -124,8 +124,6 @@ def apply_label_style(cell: Cell, li: LineItemDef, style: StyleConfig) -> None:
 
 def apply_data_cell_style(cell: Cell, li: LineItemDef, style: StyleConfig, is_history: bool) -> None:
     """Apply appropriate style to a data cell based on line item type and history status."""
-    if is_history:
-        apply_history_col_style(cell, style)
     if li.is_subtotal:
         apply_subtotal_style(cell, style)
     elif li.is_total:
