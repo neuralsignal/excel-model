@@ -24,10 +24,7 @@ from excel_model.style import (
     StyleConfig,
     apply_conditional_formatting,
     apply_header_style,
-    apply_normal_style,
     apply_section_header_style,
-    apply_subtotal_style,
-    apply_total_style,
     get_number_format,
 )
 from excel_model.time_engine import Period
@@ -135,15 +132,6 @@ def _write_scenario_headers(
             apply_header_style(cell, style)
 
 
-def _apply_scenario_cell_style(cell: object, li: object, style: StyleConfig) -> None:
-    """Apply normal/subtotal/total style to a scenario data cell."""
-    apply_normal_style(cell, style)  # type: ignore[arg-type]
-    if li.is_subtotal:  # type: ignore[union-attr]
-        apply_subtotal_style(cell, style)  # type: ignore[arg-type]
-    elif li.is_total:  # type: ignore[union-attr]
-        apply_total_style(cell, style)  # type: ignore[arg-type]
-
-
 def _build_scenario_model_sheet(
     wb: Workbook,
     spec: ModelSpec,
@@ -217,7 +205,7 @@ def _build_scenario_model_sheet(
                     fmt = li.format if li.format else "currency"
                     cell.number_format = get_number_format(fmt, style)
                     cell.alignment = Alignment(horizontal="right")
-                    _apply_scenario_cell_style(cell, li, style)
+                    apply_label_style(cell, li, style)
 
             # Apply conditional formatting to variance rows when positive_is_good is specified
             if li.formula_type in ("variance", "variance_pct") and "positive_is_good" in li.formula_params:
