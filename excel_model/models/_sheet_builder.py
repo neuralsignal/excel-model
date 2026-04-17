@@ -172,6 +172,32 @@ def set_column_widths(
         ws.column_dimensions[get_column_letter(col_idx)].width = data_width
 
 
+def write_grouped_period_headers(
+    ws: Worksheet,
+    periods: list[Period],
+    sub_labels: tuple[str, ...],
+    n_sub_cols: int,
+    style: StyleConfig,
+) -> None:
+    """Write merged period group headers (row 2) and per-sub-column labels (row 3)."""
+    label_header = ws.cell(row=2, column=1, value="Line Item")
+    apply_header_style(label_header, style)
+    for p_idx, period in enumerate(periods):
+        base_col = 2 + p_idx * n_sub_cols
+        end_col = base_col + n_sub_cols - 1
+        ws.merge_cells(f"{get_column_letter(base_col)}2:{get_column_letter(end_col)}2")
+        ph = ws.cell(row=2, column=base_col, value=period.label)
+        apply_header_style(ph, style)
+
+    sub_label_cell = ws.cell(row=3, column=1, value="")
+    apply_header_style(sub_label_cell, style)
+    for p_idx in range(len(periods)):
+        base_col = 2 + p_idx * n_sub_cols
+        for s_idx, label in enumerate(sub_labels):
+            cell = ws.cell(row=3, column=base_col + s_idx, value=label)
+            apply_header_style(cell, style)
+
+
 def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: int) -> None:
     """Write thin vertical border at the first projection column."""
     if n_history > 0:
