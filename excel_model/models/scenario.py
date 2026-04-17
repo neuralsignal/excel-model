@@ -12,6 +12,7 @@ from excel_model.models._auxiliary_sheets import (
     build_inputs_sheet,
 )
 from excel_model.models._sheet_builder import (
+    HeaderLayout,
     apply_label_style,
     assign_row_map,
     build_model_header,
@@ -150,7 +151,7 @@ def _build_scenario_model_sheet(
 
     first_proj_col_letter, last_proj_col_letter = compute_proj_col_range(periods, n_sub_cols, 2)
 
-    build_model_header(ws, spec.title, total_cols, style, "Line Item", 13, "B4")
+    build_model_header(ws, spec.title, total_cols, style, HeaderLayout("Line Item", 13, "B4"))
     _write_scenario_headers(ws, periods, spec, n_sub_cols, total_cols, style)
 
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
