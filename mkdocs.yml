@@ -33,6 +33,7 @@ nav:
       - Excel Writer: api/excel_writer.md
       - Config: api/config.md
       - CLI: api/cli.md
+      - Data Sheet: api/data_sheet.md
   - Changelog: changelog.md
 
 markdown_extensions:
