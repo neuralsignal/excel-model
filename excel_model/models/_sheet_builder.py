@@ -9,6 +9,7 @@ from openpyxl.styles import Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import LineItemDef
 from excel_model.style import (
@@ -89,7 +90,7 @@ def write_title_row(ws: Worksheet, title: str, total_cols: int, style: StyleConf
     """Write merged title row (row 1) with header styling."""
     ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
     cell = ws["A1"]
-    cell.value = title
+    cell.value = sanitize_cell_text(title)
     apply_header_style(cell, style)
     ws.row_dimensions[1].height = 20
 
@@ -120,7 +121,7 @@ def write_section_header(
 ) -> None:
     """Write a merged section header row."""
     ws.merge_cells(f"A{row}:{get_column_letter(total_cols)}{row}")
-    ws[f"A{row}"].value = section
+    ws[f"A{row}"].value = sanitize_cell_text(section)
     apply_section_header_style(ws[f"A{row}"], style)
 
 
