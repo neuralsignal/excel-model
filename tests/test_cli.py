@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from excel_model.cli import main
+from excel_model.cli import _build_description, _render_description_text, main
 
 VALID_P_AND_L_YAML = """\
 model_type: p_and_l
@@ -561,3 +561,162 @@ class TestDescribeValidationErrors:
         result = runner.invoke(main, ["describe", "--spec", str(spec_f), "--format", "text"])
         assert result.exit_code == 0
         assert "Validation errors" in result.output
+
+
+# ---------------------------------------------------------------------------
+# _build_description helper
+# ---------------------------------------------------------------------------
+
+
+class TestBuildDescription:
+    def _load_and_build(self, tmp_path, yaml_text, errors=None):
+        from excel_model.spec_loader import load_spec
+        from excel_model.time_engine import generate_periods
+
+        spec_f = tmp_path / "spec.yaml"
+        spec_f.write_text(yaml_text)
+        spec = load_spec(str(spec_f))
+        periods = generate_periods(
+            start_period=spec.start_period,
+            n_periods=spec.n_periods,
+            n_history=spec.n_history_periods,
+            granularity=spec.granularity,
+        )
+        return _build_description(spec, periods, errors if errors is not None else [])
+
+    def test_returns_expected_keys(self, tmp_path):
+        desc = self._load_and_build(tmp_path, VALID_P_AND_L_YAML)
+        expected_keys = {
+            "model_type",
+            "title",
+            "currency",
+            "granularity",
+            "start_period",
+            "n_history_periods",
+            "n_periods",
+            "total_periods",
+            "period_labels",
+            "history_labels",
+            "projection_labels",
+            "metadata",
+            "assumptions_count",
+            "assumption_groups",
+            "line_items_count",
+            "sections",
+            "scenarios",
+            "column_groups",
+            "sheets_to_create",
+            "validation_errors",
+            "inputs",
+        }
+        assert set(desc.keys()) == expected_keys
+
+    def test_groups_assumptions_by_group(self, tmp_path):
+        desc = self._load_and_build(tmp_path, VALID_P_AND_L_YAML)
+        assert "Growth" in desc["assumption_groups"]
+        assert desc["assumption_groups"]["Growth"][0]["name"] == "RevenueGrowthRate"
+
+    def test_groups_line_items_by_section(self, tmp_path):
+        desc = self._load_and_build(tmp_path, VALID_P_AND_L_YAML)
+        assert "Revenue" in desc["sections"]
+        items = desc["sections"]["Revenue"]
+        assert items[0]["key"] == "revenue"
+        assert items[0]["is_subtotal"] is False
+
+    def test_splits_history_and_projection_periods(self, tmp_path):
+        desc = self._load_and_build(tmp_path, VALID_P_AND_L_YAML)
+        assert len(desc["history_labels"]) == 2
+        assert len(desc["projection_labels"]) == 3
+        assert desc["total_periods"] == 5
+
+    def test_validation_errors_passed_through(self, tmp_path):
+        desc = self._load_and_build(tmp_path, MINIMAL_YAML, errors=["err1", "err2"])
+        assert desc["validation_errors"] == ["err1", "err2"]
+
+    def test_scenarios_included(self, tmp_path):
+        desc = self._load_and_build(tmp_path, SCENARIO_YAML)
+        assert len(desc["scenarios"]) == 2
+        assert desc["scenarios"][1]["assumption_overrides"] == {"GrowthRate": 0.20}
+
+
+# ---------------------------------------------------------------------------
+# _render_description_text helper
+# ---------------------------------------------------------------------------
+
+
+class TestRenderDescriptionText:
+    def _minimal_description(self, **overrides):
+        base = {
+            "title": "Test",
+            "model_type": "p_and_l",
+            "currency": "USD",
+            "granularity": "annual",
+            "n_history_periods": 0,
+            "n_periods": 1,
+            "history_labels": [],
+            "projection_labels": ["2025"],
+            "assumptions_count": 0,
+            "assumption_groups": {},
+            "line_items_count": 0,
+            "sections": {},
+            "scenarios": [],
+            "validation_errors": [],
+        }
+        base.update(overrides)
+        return base
+
+    def test_basic_rendering(self, tmp_path):
+        from excel_model.spec_loader import load_spec
+        from excel_model.time_engine import generate_periods
+
+        spec_f = tmp_path / "spec.yaml"
+        spec_f.write_text(VALID_P_AND_L_YAML)
+        spec = load_spec(str(spec_f))
+        periods = generate_periods(
+            start_period=spec.start_period,
+            n_periods=spec.n_periods,
+            n_history=spec.n_history_periods,
+            granularity=spec.granularity,
+        )
+        desc = _build_description(spec, periods, [])
+        text = _render_description_text(desc)
+        assert "Model: Test P&L" in text
+        assert "Type:  p_and_l" in text
+        assert "Currency: CHF" in text
+        assert "Validation: OK" in text
+        assert "History (2)" in text
+        assert "Projection (3)" in text
+
+    def test_renders_validation_errors(self):
+        desc = self._minimal_description(validation_errors=["err1", "err2"])
+        text = _render_description_text(desc)
+        assert "Validation errors (2)" in text
+        assert "  - err1" in text
+        assert "  - err2" in text
+        assert "Validation: OK" not in text
+
+    def test_renders_validation_ok(self):
+        text = _render_description_text(self._minimal_description())
+        assert "Validation: OK" in text
+        assert "Validation errors" not in text
+
+    def test_renders_scenarios(self):
+        desc = self._minimal_description(
+            scenarios=[
+                {"name": "base", "label": "Base", "assumption_overrides": {}},
+                {"name": "bull", "label": "Bull", "assumption_overrides": {"Growth": 0.2}},
+            ],
+        )
+        text = _render_description_text(desc)
+        assert "Scenarios (2)" in text
+        assert "  Base" in text
+        assert "Bull (overrides: Growth=0.2)" in text
+
+    def test_no_history_skips_history_line(self):
+        text = _render_description_text(self._minimal_description())
+        assert "History" not in text
+
+    def test_with_history_shows_history_line(self):
+        desc = self._minimal_description(n_history_periods=2, history_labels=["2023", "2024"])
+        text = _render_description_text(desc)
+        assert "History (2): 2023, 2024" in text

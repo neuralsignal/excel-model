@@ -1,13 +1,20 @@
 """CLI entry point for excel-model."""
 
+from __future__ import annotations
+
 import json
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import click
 
 from excel_model.config import load_style
 from excel_model.exceptions import ExcelModelError, StyleConfigError
+
+if TYPE_CHECKING:
+    from excel_model.spec import ModelSpec
+    from excel_model.time_engine import Period
 
 
 @click.group()
@@ -174,12 +181,96 @@ def validate(spec: str, data: str | None) -> None:
         click.echo("OK")
 
 
+def _build_description(spec: ModelSpec, periods: list[Period], errors: list[str]) -> dict[str, Any]:
+    assumption_groups: dict[str, list[dict[str, Any]]] = {}
+    for a in spec.assumptions:
+        assumption_groups.setdefault(a.group, []).append({"name": a.name, "value": a.value, "format": a.format})
+    sections: dict[str, list[dict[str, Any]]] = {}
+    for li in spec.line_items:
+        sections.setdefault(li.section, []).append(
+            {
+                "key": li.key,
+                "label": li.label,
+                "formula_type": li.formula_type,
+                "is_subtotal": li.is_subtotal,
+                "is_total": li.is_total,
+            }
+        )
+    return {
+        "model_type": spec.model_type,
+        "title": spec.title,
+        "currency": spec.currency,
+        "granularity": spec.granularity,
+        "start_period": spec.start_period,
+        "n_history_periods": spec.n_history_periods,
+        "n_periods": spec.n_periods,
+        "total_periods": len(periods),
+        "period_labels": [p.label for p in periods],
+        "history_labels": [p.label for p in periods if p.is_history],
+        "projection_labels": [p.label for p in periods if not p.is_history],
+        "metadata": {"preparer": spec.metadata.preparer, "date": spec.metadata.date, "version": spec.metadata.version},
+        "assumptions_count": len(spec.assumptions),
+        "assumption_groups": assumption_groups,
+        "line_items_count": len(spec.line_items),
+        "sections": sections,
+        "scenarios": [
+            {"name": s.name, "label": s.label, "assumption_overrides": dict(s.assumption_overrides)}
+            for s in spec.scenarios
+        ],
+        "column_groups": [{"key": cg.key, "label": cg.label} for cg in spec.column_groups],
+        "sheets_to_create": ["Assumptions", "Inputs", "Model"],
+        "validation_errors": errors,
+        "inputs": {
+            "source": spec.inputs.source,
+            "period_col": spec.inputs.period_col,
+            "value_cols": dict(spec.inputs.value_cols),
+        },
+    }
+
+
+def _render_description_text(description: dict[str, Any]) -> str:
+    lines: list[str] = [
+        f"Model: {description['title']}",
+        f"Type:  {description['model_type']}",
+        f"Currency: {description['currency']}",
+        "",
+        f"Periods ({description['granularity']}):",
+    ]
+    if description["n_history_periods"] > 0:
+        lines.append(f"  History ({description['n_history_periods']}): {', '.join(description['history_labels'])}")
+    lines.append(f"  Projection ({description['n_periods']}): {', '.join(description['projection_labels'])}")
+    lines += ["", f"Assumptions ({description['assumptions_count']}):"]
+    for group, assumptions in description["assumption_groups"].items():
+        lines.append(f"  [{group}]")
+        for a in assumptions:
+            lines.append(f"    {a['name']}: {a['value']} ({a['format']})")
+    lines += ["", f"Line Items ({description['line_items_count']}):"]
+    for section, items in description["sections"].items():
+        if section:
+            lines.append(f"  [{section}]")
+        for li in items:
+            marker = " [subtotal]" if li["is_subtotal"] else (" [total]" if li["is_total"] else "")
+            lines.append(f"    {li['label'].strip()}: {li['formula_type']}{marker}")
+    if description["scenarios"]:
+        lines += ["", f"Scenarios ({len(description['scenarios'])}):"]
+        for s in description["scenarios"]:
+            overrides = ", ".join(f"{k}={v}" for k, v in s["assumption_overrides"].items())
+            override_str = f" (overrides: {overrides})" if overrides else ""
+            lines.append(f"  {s['label']}{override_str}")
+    if description["validation_errors"]:
+        lines += ["", f"Validation errors ({len(description['validation_errors'])}):"]
+        for e in description["validation_errors"]:
+            lines.append(f"  - {e}")
+    else:
+        lines += ["", "Validation: OK"]
+    return "\n".join(lines)
+
+
 @main.command()
 @click.option("--spec", required=True, type=click.Path(exists=True), help="Path to model spec YAML")
 @click.option("--format", "output_format", required=True, type=click.Choice(["text", "json"]), help="Output format")
 def describe(spec: str, output_format: str) -> None:
     """Dry-run description of what build would produce."""
-    # Load spec
     try:
         from excel_model.spec_loader import load_spec
 
@@ -188,12 +279,9 @@ def describe(spec: str, output_format: str) -> None:
         click.echo(f"ERROR: Failed to load spec: {e}", err=True)
         sys.exit(1)
 
-    # Validate spec
     from excel_model.validator import validate_spec
 
     errors = validate_spec(loaded_spec)
-
-    # Build description
     from excel_model.time_engine import generate_periods
 
     periods = generate_periods(
@@ -203,91 +291,9 @@ def describe(spec: str, output_format: str) -> None:
         granularity=loaded_spec.granularity,
     )
 
-    # Group assumptions by group
-    assumption_groups: dict[str, list] = {}
-    for a in loaded_spec.assumptions:
-        assumption_groups.setdefault(a.group, []).append(a)
-
-    # Group line items by section
-    sections: dict[str, list] = {}
-    for li in loaded_spec.line_items:
-        sections.setdefault(li.section, []).append(li)
-
-    description = {
-        "model_type": loaded_spec.model_type,
-        "title": loaded_spec.title,
-        "currency": loaded_spec.currency,
-        "granularity": loaded_spec.granularity,
-        "start_period": loaded_spec.start_period,
-        "n_history_periods": loaded_spec.n_history_periods,
-        "n_periods": loaded_spec.n_periods,
-        "total_periods": len(periods),
-        "period_labels": [p.label for p in periods],
-        "metadata": {
-            "preparer": loaded_spec.metadata.preparer,
-            "date": loaded_spec.metadata.date,
-            "version": loaded_spec.metadata.version,
-        },
-        "assumptions_count": len(loaded_spec.assumptions),
-        "assumption_groups": {
-            group: [{"name": a.name, "value": a.value, "format": a.format} for a in assumptions]
-            for group, assumptions in assumption_groups.items()
-        },
-        "line_items_count": len(loaded_spec.line_items),
-        "sections": {
-            section: [{"key": li.key, "label": li.label, "formula_type": li.formula_type} for li in items]
-            for section, items in sections.items()
-        },
-        "scenarios": [{"name": s.name, "label": s.label} for s in loaded_spec.scenarios],
-        "column_groups": [{"key": cg.key, "label": cg.label} for cg in loaded_spec.column_groups],
-        "sheets_to_create": ["Assumptions", "Inputs", "Model"],
-        "validation_errors": errors,
-        "inputs": {
-            "source": loaded_spec.inputs.source,
-            "period_col": loaded_spec.inputs.period_col,
-            "value_cols": dict(loaded_spec.inputs.value_cols),
-        },
-    }
+    description = _build_description(loaded_spec, periods, errors)
 
     if output_format == "json":
         click.echo(json.dumps(description, indent=2))
     else:
-        click.echo(f"Model: {loaded_spec.title}")
-        click.echo(f"Type:  {loaded_spec.model_type}")
-        click.echo(f"Currency: {loaded_spec.currency}")
-        click.echo()
-        click.echo(f"Periods ({loaded_spec.granularity}):")
-        if loaded_spec.n_history_periods > 0:
-            hist = [p.label for p in periods if p.is_history]
-            click.echo(f"  History ({loaded_spec.n_history_periods}): {', '.join(hist)}")
-        proj = [p.label for p in periods if not p.is_history]
-        click.echo(f"  Projection ({loaded_spec.n_periods}): {', '.join(proj)}")
-        click.echo()
-        click.echo(f"Assumptions ({len(loaded_spec.assumptions)}):")
-        for group, assumptions in assumption_groups.items():
-            click.echo(f"  [{group}]")
-            for a in assumptions:
-                click.echo(f"    {a.name}: {a.value} ({a.format})")
-        click.echo()
-        click.echo(f"Line Items ({len(loaded_spec.line_items)}):")
-        for section, items in sections.items():
-            if section:
-                click.echo(f"  [{section}]")
-            for li in items:
-                marker = " [subtotal]" if li.is_subtotal else (" [total]" if li.is_total else "")
-                click.echo(f"    {li.label.strip()}: {li.formula_type}{marker}")
-        if loaded_spec.scenarios:
-            click.echo()
-            click.echo(f"Scenarios ({len(loaded_spec.scenarios)}):")
-            for s in loaded_spec.scenarios:
-                overrides = ", ".join(f"{k}={v}" for k, v in s.assumption_overrides.items())
-                override_str = f" (overrides: {overrides})" if overrides else ""
-                click.echo(f"  {s.label}{override_str}")
-        if errors:
-            click.echo()
-            click.echo(f"Validation errors ({len(errors)}):")
-            for e in errors:
-                click.echo(f"  - {e}")
-        else:
-            click.echo()
-            click.echo("Validation: OK")
+        click.echo(_render_description_text(description))
