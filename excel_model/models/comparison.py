@@ -119,7 +119,7 @@ def _build_comparison_model_sheet(
                 value = render_formula(li.formula_type, params, ctx)
                 cell = ws.cell(row=current_row, column=col_idx, value=value)
 
-                fmt = "percent" if li.formula_type in ("ratio", "index_to_base") else "currency"
+                fmt = li.format if li.format else "currency"
                 cell.number_format = get_number_format(fmt, style)
                 cell.alignment = Alignment(horizontal="right")
                 apply_data_cell_style(cell, li, style, False)
