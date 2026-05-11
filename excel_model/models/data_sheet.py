@@ -6,6 +6,7 @@ SumifsPivotDef, which is validated then built into an openpyxl Worksheet.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from openpyxl import Workbook
@@ -25,6 +26,16 @@ from excel_model.style import (
     apply_header_style,
     apply_normal_style,
 )
+
+
+@dataclass(frozen=True)
+class RowWriteContext:
+    """Shared context for writing cells in a single data row."""
+
+    ws: Worksheet
+    row_idx: int
+    is_alt: bool
+    style: StyleConfig
 
 
 def _quote_sheet_ref(name: str) -> str:
@@ -145,48 +156,28 @@ def build_sumifs_pivot(
     last_data_col = n_label_cols + n_data_cols
 
     for row_idx, label_vals in enumerate(row_labels, start=3):
-        is_alt = row_idx % 2 == 0
+        ctx = RowWriteContext(ws, row_idx, row_idx % 2 == 0, style)
 
         for label_col_idx, label_val in enumerate(label_vals, start=1):
             cell = ws.cell(row=row_idx, column=label_col_idx, value=label_val)
             apply_normal_style(cell, style)
-            if is_alt:
+            if ctx.is_alt:
                 apply_alt_row_style(cell, style)
 
-        _write_sumifs_data_cells(
-            ws,
-            spec,
-            row_idx,
-            first_data_col,
-            n_data_cols,
-            is_alt,
-            style,
-        )
+        _write_sumifs_data_cells(ctx, spec, first_data_col, n_data_cols)
 
         if spec.append_total:
             _write_total_cell(
-                ws,
-                row_idx,
+                ctx,
                 last_data_col + 1,
                 first_data_col,
                 last_data_col,
-                is_alt,
-                style,
                 spec.number_format_data,
             )
 
         if spec.append_yoy:
             yoy_start_col = last_data_col + (2 if spec.append_total else 1)
-            _write_yoy_cells(
-                ws,
-                row_idx,
-                yoy_start_col,
-                first_data_col,
-                n_data_cols,
-                is_alt,
-                style,
-                spec.number_format_pct,
-            )
+            _write_yoy_cells(ctx, yoy_start_col, first_data_col, n_data_cols, spec.number_format_pct)
 
     for col_idx, width in enumerate(spec.col_widths, start=1):
         ws.column_dimensions[get_column_letter(col_idx)].width = width
@@ -197,13 +188,10 @@ def build_sumifs_pivot(
 
 
 def _write_sumifs_data_cells(
-    ws: Worksheet,
+    ctx: RowWriteContext,
     spec: SumifsPivotDef,
-    row_idx: int,
     first_data_col: int,
     n_data_cols: int,
-    is_alt: bool,
-    style: StyleConfig,
 ) -> None:
     """Write SUMIFS formula cells for one data row."""
     sheet_ref = _quote_sheet_ref(spec.data_sheet)
@@ -214,49 +202,45 @@ def _write_sumifs_data_cells(
         row_criteria_parts: list[str] = []
         for filter_idx, filter_data_col in enumerate(spec.row_filter_cols):
             label_col_letter = get_column_letter(filter_idx + 1)
-            row_criteria_parts.append(f"{sheet_ref}!${filter_data_col}:${filter_data_col},${label_col_letter}{row_idx}")
+            row_criteria_parts.append(
+                f"{sheet_ref}!${filter_data_col}:${filter_data_col},${label_col_letter}{ctx.row_idx}"
+            )
 
         col_dim_criterion = f"{sheet_ref}!${spec.col_filter_col}:${spec.col_filter_col},{data_col_letter}$2"
 
         all_criteria = ",".join(row_criteria_parts + [col_dim_criterion])
         formula = f"=SUMIFS({sheet_ref}!${spec.value_col}:${spec.value_col},{all_criteria})"
 
-        cell = ws.cell(row=row_idx, column=data_col_idx, value=formula)
-        apply_normal_style(cell, style)
-        if is_alt:
-            apply_alt_row_style(cell, style)
+        cell = ctx.ws.cell(row=ctx.row_idx, column=data_col_idx, value=formula)
+        apply_normal_style(cell, ctx.style)
+        if ctx.is_alt:
+            apply_alt_row_style(cell, ctx.style)
         cell.number_format = spec.number_format_data
 
 
 def _write_total_cell(
-    ws: Worksheet,
-    row_idx: int,
+    ctx: RowWriteContext,
     total_col_idx: int,
     first_data_col: int,
     last_data_col: int,
-    is_alt: bool,
-    style: StyleConfig,
     number_format: str,
 ) -> None:
     """Write a SUM total cell for one data row."""
     first_letter = get_column_letter(first_data_col)
     last_letter = get_column_letter(last_data_col)
-    formula = f"=SUM({first_letter}{row_idx}:{last_letter}{row_idx})"
-    cell = ws.cell(row=row_idx, column=total_col_idx, value=formula)
-    apply_normal_style(cell, style)
-    if is_alt:
-        apply_alt_row_style(cell, style)
+    formula = f"=SUM({first_letter}{ctx.row_idx}:{last_letter}{ctx.row_idx})"
+    cell = ctx.ws.cell(row=ctx.row_idx, column=total_col_idx, value=formula)
+    apply_normal_style(cell, ctx.style)
+    if ctx.is_alt:
+        apply_alt_row_style(cell, ctx.style)
     cell.number_format = number_format
 
 
 def _write_yoy_cells(
-    ws: Worksheet,
-    row_idx: int,
+    ctx: RowWriteContext,
     yoy_start_col: int,
     first_data_col: int,
     n_data_cols: int,
-    is_alt: bool,
-    style: StyleConfig,
     number_format: str,
 ) -> None:
     """Write YoY percentage change cells for one data row."""
@@ -265,12 +249,12 @@ def _write_yoy_cells(
         cur_col_letter = get_column_letter(first_data_col + yoy_idx + 1)
         yoy_col_idx = yoy_start_col + yoy_idx
         yoy_formula = (
-            f"=IF({prev_col_letter}{row_idx}=0,0,"
-            f"({cur_col_letter}{row_idx}-{prev_col_letter}{row_idx})"
-            f"/ABS({prev_col_letter}{row_idx}))"
+            f"=IF({prev_col_letter}{ctx.row_idx}=0,0,"
+            f"({cur_col_letter}{ctx.row_idx}-{prev_col_letter}{ctx.row_idx})"
+            f"/ABS({prev_col_letter}{ctx.row_idx}))"
         )
-        cell = ws.cell(row=row_idx, column=yoy_col_idx, value=yoy_formula)
-        apply_normal_style(cell, style)
-        if is_alt:
-            apply_alt_row_style(cell, style)
+        cell = ctx.ws.cell(row=ctx.row_idx, column=yoy_col_idx, value=yoy_formula)
+        apply_normal_style(cell, ctx.style)
+        if ctx.is_alt:
+            apply_alt_row_style(cell, ctx.style)
         cell.number_format = number_format

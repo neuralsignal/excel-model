@@ -9,6 +9,7 @@ from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
+    HeaderLayout,
     apply_data_cell_style,
     apply_label_style,
     assign_row_map,
@@ -53,7 +54,7 @@ def _build_model_sheet(
     total_cols = 1 + len(periods)
     first_proj_col_letter, last_proj_col_letter = compute_proj_col_range(periods, 1, 2)
 
-    build_model_header(ws, spec.title, total_cols, style, "Line Item", 14, "B3")
+    build_model_header(ws, spec.title, total_cols, style, HeaderLayout("Line Item", 14, "B3"))
 
     # Row 2: Period labels
     for col_idx, period in enumerate(periods, start=2):

@@ -9,6 +9,7 @@ from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet
 from excel_model.models._sheet_builder import (
+    HeaderLayout,
     apply_data_cell_style,
     apply_label_style,
     assign_row_map,
@@ -61,7 +62,7 @@ def _build_comparison_model_sheet(
     n_entities = len(entities)
     total_cols = 1 + n_entities
 
-    build_model_header(ws, spec.title, total_cols, style, "Metric", 16, "B3")
+    build_model_header(ws, spec.title, total_cols, style, HeaderLayout("Metric", 16, "B3"))
     _write_entity_headers(ws, spec, style)
 
     # Build entity_col_range for RANK/MAX formulas
