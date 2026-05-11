@@ -10,7 +10,12 @@ from typing import TYPE_CHECKING, Any
 import click
 
 from excel_model.config import load_style
+from excel_model.excel_writer import build_workbook
 from excel_model.exceptions import ExcelModelError, StyleConfigError
+from excel_model.loader import load
+from excel_model.spec_loader import load_spec
+from excel_model.time_engine import generate_periods
+from excel_model.validator import validate_inputs_against_spec, validate_spec
 
 if TYPE_CHECKING:
     from excel_model.spec import ModelSpec
@@ -60,8 +65,6 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
     # Load spec
     emit_info(f"Loading model spec: {spec}")
     try:
-        from excel_model.spec_loader import load_spec
-
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         emit_error(f"Failed to load spec: {e}")
@@ -69,7 +72,6 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
 
     # Validate spec
     emit_info("Validating model spec...")
-    from excel_model.validator import validate_spec
 
     errors = validate_spec(loaded_spec)
     if errors:
@@ -96,8 +98,6 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
     if data:
         emit_info(f"Loading input data: {data}")
         try:
-            from excel_model.loader import load
-
             value_cols = list(loaded_spec.inputs.value_cols.values())
             inputs = load(
                 source_path=data,
@@ -106,8 +106,6 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
                 sheet=loaded_spec.inputs.sheet,
             )
             emit_info(f"  Loaded {len(inputs.df)} rows")
-
-            from excel_model.validator import validate_inputs_against_spec
 
             input_errors = validate_inputs_against_spec(loaded_spec, inputs)
             if input_errors:
@@ -118,8 +116,6 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
     # Build workbook
     emit_info("Building workbook...")
     try:
-        from excel_model.excel_writer import build_workbook
-
         build_workbook(spec=loaded_spec, inputs=inputs, output_path=output, style=loaded_style)
     except ExcelModelError as e:
         emit_error(f"Failed to build workbook: {e}")
@@ -142,23 +138,17 @@ def validate(spec: str, data: str | None) -> None:
     """Validate a model spec YAML file."""
     # Load spec
     try:
-        from excel_model.spec_loader import load_spec
-
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         click.echo(f"ERROR: {e}")
         sys.exit(1)
 
     # Validate spec
-    from excel_model.validator import validate_spec
-
     errors = validate_spec(loaded_spec)
 
     # Optionally validate input data columns
     if data:
         try:
-            from excel_model.loader import load
-
             value_cols = list(loaded_spec.inputs.value_cols.values())
             inputs = load(
                 source_path=data,
@@ -166,8 +156,6 @@ def validate(spec: str, data: str | None) -> None:
                 value_cols=value_cols,
                 sheet=loaded_spec.inputs.sheet,
             )
-            from excel_model.validator import validate_inputs_against_spec
-
             input_errors = validate_inputs_against_spec(loaded_spec, inputs)
             errors.extend(input_errors)
         except (FileNotFoundError, ValueError) as e:
@@ -272,17 +260,12 @@ def _render_description_text(description: dict[str, Any]) -> str:
 def describe(spec: str, output_format: str) -> None:
     """Dry-run description of what build would produce."""
     try:
-        from excel_model.spec_loader import load_spec
-
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         click.echo(f"ERROR: Failed to load spec: {e}", err=True)
         sys.exit(1)
 
-    from excel_model.validator import validate_spec
-
     errors = validate_spec(loaded_spec)
-    from excel_model.time_engine import generate_periods
 
     periods = generate_periods(
         start_period=loaded_spec.start_period,
