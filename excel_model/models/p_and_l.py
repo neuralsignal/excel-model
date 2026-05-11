@@ -107,7 +107,8 @@ def _build_model_sheet(
 
                 value = render_formula(li.formula_type, params, ctx)
                 cell = ws.cell(row=current_row, column=col_idx, value=value)
-                cell.number_format = get_number_format("currency", style)
+                fmt = li.format if li.format else "currency"
+                cell.number_format = get_number_format(fmt, style)
                 cell.alignment = Alignment(horizontal="right")
                 apply_data_cell_style(cell, li, style, period.is_history)
 

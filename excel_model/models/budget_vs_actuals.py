@@ -131,7 +131,7 @@ def _build_bva_model_sheet(
                     value = render_formula(li.formula_type, params, ctx)
                     cell = ws.cell(row=current_row, column=col_idx, value=value)
 
-                    fmt = "percent" if "pct" in li.formula_type.lower() or "margin" in li.key.lower() else "currency"
+                    fmt = li.format if li.format else "currency"
                     cell.number_format = get_number_format(fmt, style)
                     cell.alignment = Alignment(horizontal="right")
                     apply_label_style(cell, li, style)
