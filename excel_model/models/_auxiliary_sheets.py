@@ -5,6 +5,7 @@ from __future__ import annotations
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._sheet_builder import write_section_header, write_title_row
 from excel_model.named_ranges import register_named_range
@@ -65,7 +66,7 @@ def build_assumptions_sheet(
         group_start_row = current_row
         for assumption in assumptions:
             range_name = f"{scenario_prefix}{assumption.name}" if scenario_prefix else assumption.name
-            ws.cell(row=current_row, column=1, value=assumption.label)
+            ws.cell(row=current_row, column=1, value=sanitize_cell_text(assumption.label))
             ws.cell(row=current_row, column=2, value=range_name)
 
             value_cell = ws.cell(row=current_row, column=3, value=assumption.value)
@@ -141,7 +142,7 @@ def build_drivers_sheet(
             # Override value if specified in driver_overrides
             value = scenario.driver_overrides.get(driver.name, driver.value)
 
-            ws.cell(row=current_row, column=1, value=driver.label)
+            ws.cell(row=current_row, column=1, value=sanitize_cell_text(driver.label))
             ws.cell(row=current_row, column=2, value=range_name)
 
             value_cell = ws.cell(row=current_row, column=3, value=value)

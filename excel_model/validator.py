@@ -4,7 +4,7 @@ import re
 
 from excel_model.exceptions import FormulaInjectionError
 from excel_model.formula_types import FormulaType
-from excel_model.injection_guard import validate_custom_formula
+from excel_model.injection_guard import validate_custom_formula, validate_text_field
 from excel_model.loader import InputData
 from excel_model.spec import ModelSpec
 
@@ -64,6 +64,7 @@ def validate_spec(spec: ModelSpec) -> list[str]:
     errors.extend(_validate_drivers(spec))
     errors.extend(_validate_line_items(spec))
     errors.extend(_validate_model_type_rules(spec))
+    errors.extend(_validate_text_fields(spec))
     return errors
 
 
@@ -279,6 +280,43 @@ def _validate_wacc_tgr(spec: ModelSpec) -> list[str]:
                         f"equals growth rate ({growth_name}={growth_val}). "
                         f"This causes division by zero in the Gordon Growth Model."
                     )
+    return errors
+
+
+def _validate_text_fields(spec: ModelSpec) -> list[str]:
+    """Reject user-controlled text fields that start with formula-injection characters."""
+    errors: list[str] = []
+
+    def _check(value: str, context: str) -> None:
+        try:
+            validate_text_field(value, context)
+        except FormulaInjectionError as exc:
+            errors.append(str(exc))
+
+    _check(spec.title, "title")
+    _check(spec.metadata.preparer, "metadata preparer")
+
+    for assumption in spec.assumptions:
+        _check(assumption.label, f"assumption {assumption.name!r} label")
+        _check(assumption.group, f"assumption {assumption.name!r} group")
+
+    for driver in spec.drivers:
+        _check(driver.label, f"driver {driver.name!r} label")
+        _check(driver.group, f"driver {driver.name!r} group")
+
+    for li in spec.line_items:
+        _check(li.label, f"line item {li.key!r} label")
+        _check(li.section, f"line item {li.key!r} section")
+
+    for scenario in spec.scenarios:
+        _check(scenario.label, f"scenario {scenario.name!r} label")
+
+    for entity in spec.entities:
+        _check(entity.label, f"entity {entity.key!r} label")
+
+    for cg in spec.column_groups:
+        _check(cg.label, f"column group {cg.key!r} label")
+
     return errors
 
 

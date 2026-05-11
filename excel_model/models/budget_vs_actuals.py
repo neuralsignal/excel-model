@@ -5,14 +5,17 @@ from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
 from excel_model.formula_engine import CellContext, render_formula
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
+    HeaderLayout,
     apply_label_style,
     assign_row_map,
     build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
+    write_grouped_period_headers,
     write_section_header,
 )
 from excel_model.named_ranges import get_col_letter
@@ -20,7 +23,6 @@ from excel_model.spec import ModelSpec
 from excel_model.style import (
     StyleConfig,
     apply_conditional_formatting,
-    apply_header_style,
     get_number_format,
 )
 from excel_model.time_engine import Period
@@ -39,33 +41,6 @@ def build_budget_vs_actuals(
     _build_bva_model_sheet(wb, spec, style, periods, inputs_row_map)
 
 
-def _write_bva_headers(
-    ws: object,
-    periods: list[Period],
-    groups: tuple[object, ...],
-    n_sub_cols: int,
-    total_cols: int,
-    style: StyleConfig,
-) -> None:
-    """Write period group headers (row 2) and sub-column labels (row 3)."""
-    label_header = ws.cell(row=2, column=1, value="Line Item")  # type: ignore[union-attr]
-    apply_header_style(label_header, style)
-    for p_idx, period in enumerate(periods):
-        base_col = 2 + p_idx * n_sub_cols
-        end_col = base_col + n_sub_cols - 1
-        ws.merge_cells(f"{get_column_letter(base_col)}2:{get_column_letter(end_col)}2")  # type: ignore[union-attr]
-        ph = ws.cell(row=2, column=base_col, value=period.label)  # type: ignore[union-attr]
-        apply_header_style(ph, style)
-
-    sub_label_cell = ws.cell(row=3, column=1, value="")  # type: ignore[union-attr]
-    apply_header_style(sub_label_cell, style)
-    for p_idx, _period in enumerate(periods):
-        base_col = 2 + p_idx * n_sub_cols
-        for g_idx, group in enumerate(groups):
-            cell = ws.cell(row=3, column=base_col + g_idx, value=group.label)  # type: ignore[union-attr]
-            apply_header_style(cell, style)
-
-
 def _build_bva_model_sheet(
     wb: Workbook,
     spec: ModelSpec,
@@ -82,8 +57,9 @@ def _build_bva_model_sheet(
 
     first_proj_col_letter, last_proj_col_letter = compute_proj_col_range(periods, n_sub_cols, 2)
 
-    build_model_header(ws, spec.title, total_cols, style, "Line Item", 12, "B4")
-    _write_bva_headers(ws, periods, groups, n_sub_cols, total_cols, style)
+    build_model_header(ws, spec.title, total_cols, style, HeaderLayout("Line Item", 12, "B4"))
+    sub_labels = tuple(sanitize_cell_text(g.label) for g in groups)
+    write_grouped_period_headers(ws, periods, sub_labels, n_sub_cols, style)
 
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 4)
@@ -96,7 +72,7 @@ def _build_bva_model_sheet(
             current_row += 1
 
         for li in sections_items[section]:
-            label_cell = ws.cell(row=current_row, column=1, value=li.label)
+            label_cell = ws.cell(row=current_row, column=1, value=sanitize_cell_text(li.label))
             apply_label_style(label_cell, li, style)
 
             for p_idx, period in enumerate(periods):
@@ -131,7 +107,7 @@ def _build_bva_model_sheet(
                     value = render_formula(li.formula_type, params, ctx)
                     cell = ws.cell(row=current_row, column=col_idx, value=value)
 
-                    fmt = "percent" if "pct" in li.formula_type.lower() or "margin" in li.key.lower() else "currency"
+                    fmt = li.format if li.format else "currency"
                     cell.number_format = get_number_format(fmt, style)
                     cell.alignment = Alignment(horizontal="right")
                     apply_label_style(cell, li, style)

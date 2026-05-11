@@ -5,9 +5,11 @@ from openpyxl.styles import Alignment
 
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import CellContext, render_formula
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet
 from excel_model.models._sheet_builder import (
+    HeaderLayout,
     apply_data_cell_style,
     apply_label_style,
     assign_row_map,
@@ -44,7 +46,7 @@ def _write_entity_headers(
     label_header = ws.cell(row=2, column=1, value="Metric")  # type: ignore[union-attr]
     apply_header_style(label_header, style)
     for e_idx, entity in enumerate(spec.entities):
-        cell = ws.cell(row=2, column=2 + e_idx, value=entity.label)  # type: ignore[union-attr]
+        cell = ws.cell(row=2, column=2 + e_idx, value=sanitize_cell_text(entity.label))  # type: ignore[union-attr]
         apply_header_style(cell, style)
 
 
@@ -60,7 +62,7 @@ def _build_comparison_model_sheet(
     n_entities = len(entities)
     total_cols = 1 + n_entities
 
-    build_model_header(ws, spec.title, total_cols, style, "Metric", 16, "B3")
+    build_model_header(ws, spec.title, total_cols, style, HeaderLayout("Metric", 16, "B3"))
     _write_entity_headers(ws, spec, style)
 
     # Build entity_col_range for RANK/MAX formulas
@@ -81,7 +83,7 @@ def _build_comparison_model_sheet(
             if row_map[li.key] != current_row:
                 raise ExcelModelError(f"Row mismatch for {li.key!r}: expected {current_row}, got {row_map[li.key]}")
 
-            label_cell = ws.cell(row=current_row, column=1, value=li.label)
+            label_cell = ws.cell(row=current_row, column=1, value=sanitize_cell_text(li.label))
             apply_label_style(label_cell, li, style)
 
             entity_col_range = f"${first_entity_col}${current_row}:${last_entity_col}${current_row}"
@@ -119,7 +121,7 @@ def _build_comparison_model_sheet(
                 value = render_formula(li.formula_type, params, ctx)
                 cell = ws.cell(row=current_row, column=col_idx, value=value)
 
-                fmt = "percent" if li.formula_type in ("ratio", "index_to_base") else "currency"
+                fmt = li.format if li.format else "currency"
                 cell.number_format = get_number_format(fmt, style)
                 cell.alignment = Alignment(horizontal="right")
                 apply_data_cell_style(cell, li, style, False)

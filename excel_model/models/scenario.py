@@ -5,6 +5,7 @@ from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
 from excel_model.formula_engine import CellContext, render_formula
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import (
     build_assumptions_sheet,
@@ -12,11 +13,13 @@ from excel_model.models._auxiliary_sheets import (
     build_inputs_sheet,
 )
 from excel_model.models._sheet_builder import (
+    HeaderLayout,
     apply_label_style,
     assign_row_map,
     build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
+    write_grouped_period_headers,
     write_section_header,
     write_title_row,
 )
@@ -85,7 +88,7 @@ def _build_scenario_assumptions(
         # Scenario section header
         ws.merge_cells(f"A{current_row}:D{current_row}")
         sec_cell = ws[f"A{current_row}"]
-        sec_cell.value = f"{scenario.label} Assumptions"
+        sec_cell.value = sanitize_cell_text(f"{scenario.label} Assumptions")
         apply_section_header_style(sec_cell, style)
         current_row += 1
 
@@ -94,7 +97,7 @@ def _build_scenario_assumptions(
             # Override value if specified for this scenario
             value = scenario.assumption_overrides.get(assumption.name, assumption.value)
 
-            ws.cell(row=current_row, column=1, value=assumption.label)
+            ws.cell(row=current_row, column=1, value=sanitize_cell_text(assumption.label))
             ws.cell(row=current_row, column=2, value=range_name)
 
             value_cell = ws.cell(row=current_row, column=3, value=value)
@@ -105,33 +108,6 @@ def _build_scenario_assumptions(
 
             register_named_range(wb, range_name, "Assumptions", current_row, 3)
             current_row += 1
-
-
-def _write_scenario_headers(
-    ws: object,
-    periods: list[Period],
-    spec: ModelSpec,
-    n_sub_cols: int,
-    total_cols: int,
-    style: StyleConfig,
-) -> None:
-    """Write period group headers (row 2) and scenario labels (row 3)."""
-    label_header = ws.cell(row=2, column=1, value="Line Item")  # type: ignore[union-attr]
-    apply_header_style(label_header, style)
-    for p_idx, period in enumerate(periods):
-        base_col = 2 + p_idx * n_sub_cols
-        end_col = base_col + n_sub_cols - 1
-        ws.merge_cells(f"{get_column_letter(base_col)}2:{get_column_letter(end_col)}2")  # type: ignore[union-attr]
-        ph = ws.cell(row=2, column=base_col, value=period.label)  # type: ignore[union-attr]
-        apply_header_style(ph, style)
-
-    ws.cell(row=3, column=1, value="")  # type: ignore[union-attr]
-    apply_header_style(ws.cell(row=3, column=1), style)  # type: ignore[union-attr]
-    for p_idx in range(len(periods)):
-        base_col = 2 + p_idx * n_sub_cols
-        for s_idx, scenario in enumerate(spec.scenarios):
-            cell = ws.cell(row=3, column=base_col + s_idx, value=scenario.label)  # type: ignore[union-attr]
-            apply_header_style(cell, style)
 
 
 def _build_scenario_model_sheet(
@@ -150,8 +126,9 @@ def _build_scenario_model_sheet(
 
     first_proj_col_letter, last_proj_col_letter = compute_proj_col_range(periods, n_sub_cols, 2)
 
-    build_model_header(ws, spec.title, total_cols, style, "Line Item", 13, "B4")
-    _write_scenario_headers(ws, periods, spec, n_sub_cols, total_cols, style)
+    build_model_header(ws, spec.title, total_cols, style, HeaderLayout("Line Item", 13, "B4"))
+    sub_labels = tuple(sanitize_cell_text(s.label) for s in spec.scenarios)
+    write_grouped_period_headers(ws, periods, sub_labels, n_sub_cols, style)
 
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 4)
@@ -164,7 +141,7 @@ def _build_scenario_model_sheet(
             current_row += 1
 
         for li in sections_items[section]:
-            label_cell = ws.cell(row=current_row, column=1, value=li.label)
+            label_cell = ws.cell(row=current_row, column=1, value=sanitize_cell_text(li.label))
             apply_label_style(label_cell, li, style)
 
             for p_idx, period in enumerate(periods):

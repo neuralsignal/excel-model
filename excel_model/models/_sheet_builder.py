@@ -9,6 +9,7 @@ from openpyxl.styles import Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import LineItemDef
 from excel_model.style import (
@@ -36,34 +37,37 @@ class SheetRenderContext:
     style: StyleConfig
 
 
+@dataclass(frozen=True)
+class HeaderLayout:
+    """Layout parameters for the standard model sheet header."""
+
+    label_col_header: str
+    data_col_width: int
+    freeze_cell: str
+
+
 def build_model_header(
     ws: Worksheet,
     title: str,
     total_cols: int,
     style: StyleConfig,
-    label_col_header: str,
-    data_col_width: int,
-    freeze_cell: str,
+    layout: HeaderLayout,
 ) -> None:
     """Build the standard model sheet header rows shared by all builders.
 
     Handles: row-1 title merge + style, row-2 label column header,
     column-A width, data-column widths, and freeze panes.
     """
-    # Row 1: Title
     write_title_row(ws, title, total_cols, style)
 
-    # Row 2, column 1: Label header
-    label_header = ws.cell(row=2, column=1, value=label_col_header)
+    label_header = ws.cell(row=2, column=1, value=layout.label_col_header)
     apply_header_style(label_header, style)
 
-    # Column widths
     ws.column_dimensions["A"].width = 28
     for col_idx in range(2, total_cols + 1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = data_col_width
+        ws.column_dimensions[get_column_letter(col_idx)].width = layout.data_col_width
 
-    # Freeze panes
-    ws.freeze_panes = freeze_cell
+    ws.freeze_panes = layout.freeze_cell
 
 
 def group_line_items_by_section(
@@ -89,7 +93,7 @@ def write_title_row(ws: Worksheet, title: str, total_cols: int, style: StyleConf
     """Write merged title row (row 1) with header styling."""
     ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
     cell = ws["A1"]
-    cell.value = title
+    cell.value = sanitize_cell_text(title)
     apply_header_style(cell, style)
     ws.row_dimensions[1].height = 20
 
@@ -120,7 +124,7 @@ def write_section_header(
 ) -> None:
     """Write a merged section header row."""
     ws.merge_cells(f"A{row}:{get_column_letter(total_cols)}{row}")
-    ws[f"A{row}"].value = section
+    ws[f"A{row}"].value = sanitize_cell_text(section)
     apply_section_header_style(ws[f"A{row}"], style)
 
 
@@ -170,6 +174,32 @@ def set_column_widths(
     ws.column_dimensions["A"].width = label_width
     for col_idx in range(2, total_cols + 1):
         ws.column_dimensions[get_column_letter(col_idx)].width = data_width
+
+
+def write_grouped_period_headers(
+    ws: Worksheet,
+    periods: list[Period],
+    sub_labels: tuple[str, ...],
+    n_sub_cols: int,
+    style: StyleConfig,
+) -> None:
+    """Write merged period group headers (row 2) and per-sub-column labels (row 3)."""
+    label_header = ws.cell(row=2, column=1, value="Line Item")
+    apply_header_style(label_header, style)
+    for p_idx, period in enumerate(periods):
+        base_col = 2 + p_idx * n_sub_cols
+        end_col = base_col + n_sub_cols - 1
+        ws.merge_cells(f"{get_column_letter(base_col)}2:{get_column_letter(end_col)}2")
+        ph = ws.cell(row=2, column=base_col, value=period.label)
+        apply_header_style(ph, style)
+
+    sub_label_cell = ws.cell(row=3, column=1, value="")
+    apply_header_style(sub_label_cell, style)
+    for p_idx in range(len(periods)):
+        base_col = 2 + p_idx * n_sub_cols
+        for s_idx, label in enumerate(sub_labels):
+            cell = ws.cell(row=3, column=base_col + s_idx, value=label)
+            apply_header_style(cell, style)
 
 
 def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: int) -> None:

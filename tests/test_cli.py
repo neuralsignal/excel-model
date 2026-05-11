@@ -137,7 +137,7 @@ class TestBuildSpecLoadFailure:
         dummy = tmp_path / "dummy.yaml"
         dummy.write_text("placeholder")
         with patch(
-            "excel_model.spec_loader.load_spec",
+            "excel_model.cli.load_spec",
             side_effect=FileNotFoundError("spec not found"),
         ):
             result = runner.invoke(
@@ -154,7 +154,7 @@ class TestBuildSpecLoadFailure:
         dummy.write_text("placeholder")
         out_path = tmp_path / "out.xlsx"
         with patch(
-            "excel_model.spec_loader.load_spec",
+            "excel_model.cli.load_spec",
             side_effect=ValueError("bad spec"),
         ):
             result = runner.invoke(
@@ -221,7 +221,7 @@ class TestBuildWorkbookFailure:
 
         out_path = tmp_path / "out.xlsx"
         with patch(
-            "excel_model.excel_writer.build_workbook",
+            "excel_model.cli.build_workbook",
             side_effect=ExcelModelError("mock build error"),
         ):
             result = runner.invoke(
@@ -236,7 +236,7 @@ class TestBuildWorkbookFailure:
     def test_batch_value_error(self, runner, spec_file, tmp_path):
         out_path = tmp_path / "out.xlsx"
         with patch(
-            "excel_model.excel_writer.build_workbook",
+            "excel_model.cli.build_workbook",
             side_effect=ValueError("value err"),
         ):
             result = runner.invoke(
@@ -251,7 +251,7 @@ class TestBuildWorkbookFailure:
     def test_interactive_workbook_error(self, runner, spec_file, tmp_path):
         out_path = tmp_path / "out.xlsx"
         with patch(
-            "excel_model.excel_writer.build_workbook",
+            "excel_model.cli.build_workbook",
             side_effect=ValueError("build failed"),
         ):
             result = runner.invoke(
@@ -287,7 +287,7 @@ class TestBuildWithData:
         dummy_data.write_text("a,b\n1,2\n")
         out_path = tmp_path / "out.xlsx"
         with patch(
-            "excel_model.loader.load",
+            "excel_model.cli.load",
             side_effect=ValueError("bad data"),
         ):
             result = runner.invoke(
@@ -324,8 +324,8 @@ class TestBuildWithData:
             value_cols=["revenue"],
         )
         with (
-            patch("excel_model.loader.load", return_value=mock_inputs),
-            patch("excel_model.validator.validate_inputs_against_spec", return_value=[]),
+            patch("excel_model.cli.load", return_value=mock_inputs),
+            patch("excel_model.cli.validate_inputs_against_spec", return_value=[]),
         ):
             result = runner.invoke(
                 main,
@@ -360,9 +360,9 @@ class TestBuildWithData:
             value_cols=["revenue"],
         )
         with (
-            patch("excel_model.loader.load", return_value=mock_inputs),
+            patch("excel_model.cli.load", return_value=mock_inputs),
             patch(
-                "excel_model.validator.validate_inputs_against_spec",
+                "excel_model.cli.validate_inputs_against_spec",
                 return_value=["missing column: cost"],
             ),
         ):
@@ -407,7 +407,7 @@ class TestValidateFailure:
         dummy = tmp_path / "dummy.yaml"
         dummy.write_text("placeholder")
         with patch(
-            "excel_model.spec_loader.load_spec",
+            "excel_model.cli.load_spec",
             side_effect=ValueError("parse fail"),
         ):
             result = runner.invoke(main, ["validate", "--spec", str(dummy)])
@@ -427,7 +427,7 @@ class TestValidateWithData:
         dummy_data = tmp_path / "data.csv"
         dummy_data.write_text("a,b\n1,2\n")
         with patch(
-            "excel_model.loader.load",
+            "excel_model.cli.load",
             side_effect=ValueError("bad data file"),
         ):
             result = runner.invoke(
@@ -451,8 +451,8 @@ class TestValidateWithData:
             value_cols=["revenue"],
         )
         with (
-            patch("excel_model.loader.load", return_value=mock_inputs),
-            patch("excel_model.validator.validate_inputs_against_spec", return_value=[]),
+            patch("excel_model.cli.load", return_value=mock_inputs),
+            patch("excel_model.cli.validate_inputs_against_spec", return_value=[]),
         ):
             result = runner.invoke(
                 main,
@@ -529,7 +529,7 @@ class TestDescribeFailure:
         dummy = tmp_path / "dummy.yaml"
         dummy.write_text("placeholder")
         with patch(
-            "excel_model.spec_loader.load_spec",
+            "excel_model.cli.load_spec",
             side_effect=ValueError("bad spec"),
         ):
             result = runner.invoke(main, ["describe", "--spec", str(dummy), "--format", "json"])
