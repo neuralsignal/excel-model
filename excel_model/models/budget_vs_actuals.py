@@ -5,6 +5,7 @@ from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
 from excel_model.formula_engine import CellContext, render_formula
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
@@ -62,7 +63,7 @@ def _write_bva_headers(
     for p_idx, _period in enumerate(periods):
         base_col = 2 + p_idx * n_sub_cols
         for g_idx, group in enumerate(groups):
-            cell = ws.cell(row=3, column=base_col + g_idx, value=group.label)  # type: ignore[union-attr]
+            cell = ws.cell(row=3, column=base_col + g_idx, value=sanitize_cell_text(group.label))  # type: ignore[union-attr]
             apply_header_style(cell, style)
 
 
@@ -96,7 +97,7 @@ def _build_bva_model_sheet(
             current_row += 1
 
         for li in sections_items[section]:
-            label_cell = ws.cell(row=current_row, column=1, value=li.label)
+            label_cell = ws.cell(row=current_row, column=1, value=sanitize_cell_text(li.label))
             apply_label_style(label_cell, li, style)
 
             for p_idx, period in enumerate(periods):

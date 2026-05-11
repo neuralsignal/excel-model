@@ -5,6 +5,7 @@ from openpyxl.styles import Alignment, Font
 
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import CellContext, render_formula
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
@@ -77,7 +78,7 @@ def _build_model_sheet(
             if row_map[li.key] != current_row:
                 raise ExcelModelError(f"Row mismatch for {li.key!r}: expected {current_row}, got {row_map[li.key]}")
 
-            label_cell = ws.cell(row=current_row, column=1, value=li.label)
+            label_cell = ws.cell(row=current_row, column=1, value=sanitize_cell_text(li.label))
             apply_label_style(label_cell, li, style)
 
             for col_idx, period in enumerate(periods, start=2):

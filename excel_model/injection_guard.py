@@ -1,8 +1,10 @@
-"""Formula injection validation — rejects dangerous Excel patterns in custom formulas."""
+"""Formula injection validation — rejects dangerous Excel patterns in custom formulas and text labels."""
 
 import re
 
 from excel_model.exceptions import FormulaInjectionError
+
+_FORMULA_INJECTION_PREFIXES = ("=", "+", "-", "@")
 
 # Patterns that indicate potential Excel formula injection (DDE, external data exfiltration)
 _DANGEROUS_FORMULA_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -50,4 +52,29 @@ def validate_custom_formula(formula: str, line_item_key: str) -> None:
     if _UNC_PATH_RE.search(formula):
         raise FormulaInjectionError(
             f"Line item {line_item_key!r}: custom formula contains a UNC path. Formula: {formula!r}"
+        )
+
+
+def sanitize_cell_text(value: str) -> str:
+    """Escape leading formula-injection characters in text written to Excel cells.
+
+    Prefixes with a single-quote so openpyxl stores the value as a plain string
+    instead of interpreting it as a formula.  This is a defense-in-depth measure;
+    the primary defense is validation via validate_text_field / validate_spec.
+    """
+    if value and value[0] in _FORMULA_INJECTION_PREFIXES:
+        return "'" + value
+    return value
+
+
+def validate_text_field(value: str, field_description: str) -> None:
+    """Reject a text value that starts with a formula-injection character.
+
+    Raises FormulaInjectionError with a message identifying the offending field.
+    """
+    if value and value[0] in _FORMULA_INJECTION_PREFIXES:
+        raise FormulaInjectionError(
+            f"{field_description}: value {value!r} starts with {value[0]!r}, "
+            f"which triggers Excel formula injection. "
+            f"Remove or escape the leading character."
         )
