@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5](https://github.com/neuralsignal/excel-model/compare/v0.1.4...v0.1.5) (2026-05-11)
+
+
+### Bug Fixes
+
+* sanitize text labels to prevent Excel formula injection ([#116](https://github.com/neuralsignal/excel-model/issues/116)) ([2d2108d](https://github.com/neuralsignal/excel-model/commit/2d2108dba3caf03d8a7cff260e24a44c64fcf6b6))
+* use li.format instead of hardcoded/heuristic format in model builders ([#119](https://github.com/neuralsignal/excel-model/issues/119)) ([d48ffb7](https://github.com/neuralsignal/excel-model/commit/d48ffb73ff2a86dfb5cd3198291599ad70d4282c))
+
 ## [0.1.4](https://github.com/neuralsignal/excel-model/compare/v0.1.3...v0.1.4) (2026-04-13)
 
 
