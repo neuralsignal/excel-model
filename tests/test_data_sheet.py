@@ -530,3 +530,28 @@ def test_sumifs_quotes_simple_data_sheet_name(wb, style):
     )
     formula = ws.cell(row=3, column=2).value
     assert "'TRANSACTIONS_LNFW'!$AO:$AO" in formula
+
+
+def test_sumifs_yoy_alt_row_style(wb, style):
+    """YoY cells on even rows (alt) get the alt-row fill."""
+    spec = SumifsPivotDef(
+        sheet_name="YOYALT",
+        title="YoY Alt",
+        row_label_headers=("Hub",),
+        col_dim_values=(2023, 2024),
+        data_sheet="TRANSACTIONS_LNFW",
+        value_col="AO",
+        row_filter_cols=("AM",),
+        col_filter_col="AJ",
+        append_total=False,
+        append_yoy=True,
+        col_widths=(28.0, 14.0, 14.0, 12.0),
+        number_format_data="#,##0",
+        number_format_pct="0.0%",
+        freeze_row=2,
+    )
+    ws = build_sumifs_pivot(wb=wb, spec=spec, row_labels=[["A"], ["B"]], style=style)
+    # Row 4 is even → alt row; YoY column is col 4
+    yoy_cell = ws.cell(row=4, column=4)
+    assert yoy_cell.fill.fill_type == "solid"
+    assert yoy_cell.fill.fgColor.rgb == f"00{style.alt_row_fill_hex}"

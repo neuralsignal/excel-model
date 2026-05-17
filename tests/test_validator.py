@@ -5,6 +5,7 @@ import polars as pl
 from excel_model.loader import InputData
 from excel_model.spec import (
     AssumptionDef,
+    ColumnGroupDef,
     InputsDef,
     LineItemDef,
     MetadataDef,
@@ -164,3 +165,13 @@ class TestValidateInputsAgainstSpec:
         inputs = InputData(df=df, period_col="period", value_cols=["other"])
         errors = validate_inputs_against_spec(spec, inputs)
         assert any("revenue_column" in e for e in errors)
+
+
+class TestColumnGroupLabelInjection:
+    def test_injection_in_column_group_label(self):
+        spec = make_minimal_spec(
+            model_type="budget_vs_actuals",
+            column_groups=(ColumnGroupDef(key="plan", label="=DANGEROUS()", color_hex="FF0000"),),
+        )
+        errors = validate_spec(spec)
+        assert any("column group" in e and "formula injection" in e.lower() for e in errors)

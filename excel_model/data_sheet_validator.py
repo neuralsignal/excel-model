@@ -2,8 +2,6 @@
 
 import re
 
-from openpyxl.utils import column_index_from_string
-
 from excel_model.spec import DataSheetDef, SumifsPivotDef
 
 _VALID_COL_LETTER_RE = re.compile(r"^[A-Z]{1,3}$")
@@ -14,11 +12,6 @@ def _validate_column_letter(col: str, field_name: str) -> list[str]:
     """Validate that col is a valid Excel column letter (A–XFD)."""
     errors: list[str] = []
     if not _VALID_COL_LETTER_RE.match(col):
-        errors.append(f"{field_name}: {col!r} is not a valid Excel column letter (A–XFD)")
-        return errors
-    try:
-        column_index_from_string(col)
-    except ValueError:
         errors.append(f"{field_name}: {col!r} is not a valid Excel column letter (A–XFD)")
     return errors
 
