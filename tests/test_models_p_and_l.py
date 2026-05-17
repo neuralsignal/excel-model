@@ -1,8 +1,11 @@
 """Tests for P&L model builder."""
 
+from unittest.mock import patch
+
 import pytest
 from openpyxl import Workbook
 
+from excel_model.exceptions import ExcelModelError
 from excel_model.models.p_and_l import build_p_and_l
 from excel_model.spec import (
     AssumptionDef,
@@ -308,3 +311,25 @@ def test_p_and_l_with_input_ref_formula(style):
     # Projection columns should have the constant value
     proj_cell = ws.cell(row=3, column=3)
     assert proj_cell.value == 1000
+
+
+def test_p_and_l_row_mismatch_raises(p_and_l_spec, style):
+    """Line 80: row_map disagreeing with current_row raises ExcelModelError."""
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 3, 2, "annual")
+
+    def bad_row_map(sections_order, sections_items, start_row):
+        from excel_model.models._sheet_builder import assign_row_map as real
+
+        row_map = real(sections_order, sections_items, start_row)
+        first_key = next(iter(row_map))
+        row_map[first_key] += 1
+        return row_map
+
+    with (
+        patch("excel_model.models.p_and_l.assign_row_map", side_effect=bad_row_map),
+        pytest.raises(ExcelModelError, match="Row mismatch"),
+    ):
+        build_p_and_l(wb, p_and_l_spec, None, style, periods)

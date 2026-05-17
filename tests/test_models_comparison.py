@@ -1,8 +1,11 @@
 """Tests for Comparison model builder."""
 
+from unittest.mock import patch
+
 import pytest
 from openpyxl import Workbook
 
+from excel_model.exceptions import ExcelModelError
 from excel_model.models.comparison import _entity_col_index, build_comparison
 from excel_model.spec import (
     EntityDef,
@@ -339,3 +342,24 @@ def test_entity_col_index_known_key(comparison_spec):
 
 def test_entity_col_index_unknown_key(comparison_spec):
     assert _entity_col_index(comparison_spec, "nonexistent") is None
+
+
+def test_comparison_row_mismatch_raises(comparison_spec, style):
+    """Line 84: row_map disagreeing with current_row raises ExcelModelError."""
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+
+    def bad_row_map(sections_order, sections_items, start_row):
+        from excel_model.models._sheet_builder import assign_row_map as real
+
+        row_map = real(sections_order, sections_items, start_row)
+        first_key = next(iter(row_map))
+        row_map[first_key] += 1
+        return row_map
+
+    with (
+        patch("excel_model.models.comparison.assign_row_map", side_effect=bad_row_map),
+        pytest.raises(ExcelModelError, match="Row mismatch"),
+    ):
+        build_comparison(wb, comparison_spec, None, style)
