@@ -68,7 +68,7 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         emit_error(f"Failed to load spec: {e}")
-        return  # unreachable, but keeps type checker happy
+        return  # pragma: no cover
 
     # Validate spec
     emit_info("Validating model spec...")
@@ -91,7 +91,7 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
         loaded_style = load_style(style)
     except StyleConfigError as e:
         emit_error(f"Failed to load style config: {e}")
-        return
+        return  # pragma: no cover
 
     # Load input data (optional)
     inputs = None
