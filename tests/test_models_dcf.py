@@ -1,8 +1,11 @@
 """Tests for DCF model builder."""
 
+from unittest.mock import patch
+
 import pytest
 from openpyxl import Workbook
 
+from excel_model.exceptions import ExcelModelError
 from excel_model.models.dcf import build_dcf
 from excel_model.spec import (
     AssumptionDef,
@@ -537,3 +540,25 @@ def test_dcf_total_styling_per_column(style):
     # Data cell should have total fill
     total_cell = ws.cell(row=total_row, column=2)
     assert total_cell.fill.start_color.rgb is not None
+
+
+def test_dcf_row_mismatch_raises(dcf_spec, style):
+    """Line 165: row_map disagreeing with current_row raises ExcelModelError."""
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 5, 0, "annual")
+
+    def bad_row_map(sections_order, sections_items, start_row):
+        from excel_model.models._sheet_builder import assign_row_map as real
+
+        row_map = real(sections_order, sections_items, start_row)
+        first_key = next(iter(row_map))
+        row_map[first_key] += 1
+        return row_map
+
+    with (
+        patch("excel_model.models.dcf.assign_row_map", side_effect=bad_row_map),
+        pytest.raises(ExcelModelError, match="Row mismatch"),
+    ):
+        build_dcf(wb, dcf_spec, None, style, periods)
