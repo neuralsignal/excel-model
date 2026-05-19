@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6](https://github.com/neuralsignal/excel-model/compare/v0.1.5...v0.1.6) (2026-05-19)
+
+
+### Bug Fixes
+
+* cover untested branches in data_sheet_validator, sheet_builder, data_sheet, validator ([#137](https://github.com/neuralsignal/excel-model/issues/137)) ([6f3234d](https://github.com/neuralsignal/excel-model/commit/6f3234daf9517d20be4c2258c179178666d81b35))
+* pin urllib3 &gt;=2.7.0 to resolve CVE-2026-44431 and CVE-2026-44432 ([#141](https://github.com/neuralsignal/excel-model/issues/141)) ([5374e00](https://github.com/neuralsignal/excel-model/commit/5374e00d9d72bb626516abc9cde28e5b635ad140))
+* validate custom formulas after placeholder substitution ([#131](https://github.com/neuralsignal/excel-model/issues/131)) ([c1dd130](https://github.com/neuralsignal/excel-model/commit/c1dd1302b795ff42570835fb78d0d380e3f0a333))
+
 ## [0.1.5](https://github.com/neuralsignal/excel-model/compare/v0.1.4...v0.1.5) (2026-05-11)
 
 
