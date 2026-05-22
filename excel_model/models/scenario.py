@@ -4,7 +4,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
-from excel_model.formula_engine import CellContext, render_formula
+from excel_model.formula_engine import render_formula
+from excel_model.formula_types import CellContext
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import (
