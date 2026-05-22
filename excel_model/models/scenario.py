@@ -2,7 +2,6 @@
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
-from openpyxl.utils import get_column_letter
 
 from excel_model.formula_engine import CellContext, render_formula
 from excel_model.injection_guard import sanitize_cell_text
@@ -19,6 +18,7 @@ from excel_model.models._sheet_builder import (
     build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
+    maybe_apply_variance_formatting,
     write_grouped_period_headers,
     write_section_header,
     write_title_row,
@@ -27,7 +27,6 @@ from excel_model.named_ranges import get_col_letter, register_named_range
 from excel_model.spec import ModelSpec, ScenarioDef
 from excel_model.style import (
     StyleConfig,
-    apply_conditional_formatting,
     apply_header_style,
     apply_section_header_style,
     get_number_format,
@@ -186,12 +185,6 @@ def _build_scenario_model_sheet(
                     cell.alignment = Alignment(horizontal="right")
                     apply_label_style(cell, li, style)
 
-            # Apply conditional formatting to variance rows when positive_is_good is specified
-            if li.formula_type in ("variance", "variance_pct") and "positive_is_good" in li.formula_params:
-                positive_is_good = bool(li.formula_params["positive_is_good"])
-                data_start = get_column_letter(2)
-                data_end = get_column_letter(total_cols)
-                cf_range = f"{data_start}{current_row}:{data_end}{current_row}"
-                apply_conditional_formatting(ws, cf_range, positive_is_good, style)
+            maybe_apply_variance_formatting(ws, li, current_row, total_cols, style)
 
             current_row += 1
