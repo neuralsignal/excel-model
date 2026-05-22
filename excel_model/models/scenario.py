@@ -21,6 +21,7 @@ from excel_model.models._sheet_builder import (
     compute_proj_col_range,
     effective_format,
     group_line_items_by_section,
+    resolve_formula_params,
     write_four_col_header,
     write_grouped_period_headers,
     write_section_header,
@@ -152,9 +153,7 @@ def _build_scenario_model_sheet(
                     prior_col_letter = get_col_letter(col_idx - n_sub_cols) if p_idx > 0 else ""
                     prefix = _scenario_prefix(scenario)
 
-                    params = dict(li.formula_params)
-                    if li.formula_type == "input_ref":
-                        params["line_item_key"] = li.key
+                    params = resolve_formula_params(li)
 
                     # Build named_ranges: assumptions + drivers
                     all_named = {a.name: a.name for a in spec.assumptions}

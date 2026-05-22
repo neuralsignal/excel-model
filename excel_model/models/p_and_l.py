@@ -18,6 +18,7 @@ from excel_model.models._sheet_builder import (
     compute_proj_col_range,
     effective_format,
     group_line_items_by_section,
+    resolve_formula_params,
     write_history_border,
     write_section_header,
 )
@@ -88,9 +89,7 @@ def _build_model_sheet(
                 col_letter = get_col_letter(col_idx)
                 prior_col_letter = get_col_letter(col_idx - 1) if col_idx > 2 else ""
 
-                params = dict(li.formula_params)
-                if li.formula_type == "input_ref":
-                    params["line_item_key"] = li.key
+                params = resolve_formula_params(li)
 
                 ctx = CellContext(
                     period_index=period.index,

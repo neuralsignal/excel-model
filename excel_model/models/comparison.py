@@ -17,6 +17,7 @@ from excel_model.models._sheet_builder import (
     build_model_header,
     effective_format,
     group_line_items_by_section,
+    resolve_formula_params,
     write_section_header,
 )
 from excel_model.named_ranges import get_col_letter
@@ -94,7 +95,7 @@ def _build_comparison_model_sheet(
                 col_idx = 2 + e_idx
                 col_letter = get_col_letter(col_idx)
 
-                params = dict(li.formula_params)
+                params = resolve_formula_params(li)
 
                 # For index_to_base, inject the base entity's column letter
                 if li.formula_type == "index_to_base":
