@@ -542,6 +542,72 @@ def test_dcf_total_styling_per_column(style):
     assert total_cell.fill.start_color.rgb is not None
 
 
+def test_dcf_respects_line_item_format(style):
+    """Regression: _write_standard_cells must use li.format, not hardcode currency."""
+    spec = ModelSpec(
+        model_type="dcf",
+        title="DCF Format Test",
+        currency="CHF",
+        granularity="annual",
+        start_period="2025",
+        n_periods=3,
+        n_history_periods=0,
+        assumptions=(
+            AssumptionDef(name="WACC", label="Discount Rate", value=0.10, format="percent", group="Valuation"),
+        ),
+        line_items=(
+            LineItemDef(
+                key="growth_rate",
+                label="Growth Rate",
+                formula_type="constant",
+                formula_params={"value": 0.05},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="percent",
+            ),
+            LineItemDef(
+                key="revenue",
+                label="Revenue",
+                formula_type="constant",
+                formula_params={"value": 1000},
+                is_subtotal=False,
+                is_total=False,
+                section="",
+                format="",
+            ),
+        ),
+        metadata=MetadataDef(preparer="", date="", version="1.0"),
+        scenarios=(),
+        column_groups=(),
+        inputs=InputsDef(source="", period_col="period", sheet="", value_cols={}),
+        entities=(),
+        drivers=(),
+    )
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 3, 0, "annual")
+    build_dcf(wb, spec, None, style, periods)
+
+    ws = wb["Model"]
+    growth_row = None
+    revenue_row = None
+    for row in ws.iter_rows(min_row=3):
+        if row[0].value == "Growth Rate":
+            growth_row = row[0].row
+        if row[0].value == "Revenue":
+            revenue_row = row[0].row
+    assert growth_row is not None
+    assert revenue_row is not None
+
+    growth_cell = ws.cell(row=growth_row, column=2)
+    assert growth_cell.number_format == style.number_format_percent
+
+    revenue_cell = ws.cell(row=revenue_row, column=2)
+    assert revenue_cell.number_format == style.number_format_currency
+
+
 def test_dcf_row_mismatch_raises(dcf_spec, style):
     """Line 165: row_map disagreeing with current_row raises ExcelModelError."""
     wb = Workbook()
