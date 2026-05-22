@@ -6,9 +6,9 @@ from hypothesis import strategies as st
 
 from excel_model.exceptions import FormulaInjectionError
 from excel_model.formula_engine import CellContext, render_formula
-from excel_model.injection_guard import sanitize_cell_text, validate_text_field
+from excel_model.injection_guard import sanitize_cell_text, validate_custom_formula, validate_text_field
 from excel_model.spec import AssumptionDef, InputsDef, LineItemDef, MetadataDef, ModelSpec
-from excel_model.validator import validate_custom_formula, validate_spec
+from excel_model.validator import validate_spec
 
 
 def make_ctx() -> CellContext:

@@ -12,10 +12,11 @@ import click
 from excel_model.config import load_style
 from excel_model.excel_writer import build_workbook
 from excel_model.exceptions import ExcelModelError, StyleConfigError
+from excel_model.input_validator import validate_inputs_against_spec
 from excel_model.loader import load
 from excel_model.spec_loader import load_spec
 from excel_model.time_engine import generate_periods
-from excel_model.validator import validate_inputs_against_spec, validate_spec
+from excel_model.validator import validate_spec
 
 if TYPE_CHECKING:
     from excel_model.spec import ModelSpec
