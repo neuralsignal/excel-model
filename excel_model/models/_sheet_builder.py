@@ -15,6 +15,7 @@ from excel_model.named_ranges import get_col_letter
 from excel_model.spec import LineItemDef
 from excel_model.style import (
     StyleConfig,
+    apply_conditional_formatting,
     apply_header_style,
     apply_history_col_style,
     apply_normal_style,
@@ -219,6 +220,20 @@ def resolve_formula_params(li: LineItemDef) -> dict[str, Any]:
     if li.formula_type == "input_ref":
         params["line_item_key"] = li.key
     return params
+
+
+def maybe_apply_variance_formatting(
+    ws: Worksheet,
+    li: LineItemDef,
+    current_row: int,
+    total_cols: int,
+    style: StyleConfig,
+) -> None:
+    """Apply conditional formatting to variance rows if positive_is_good is set."""
+    if li.formula_type in ("variance", "variance_pct") and "positive_is_good" in li.formula_params:
+        positive_is_good = bool(li.formula_params["positive_is_good"])
+        cf_range = f"{get_column_letter(2)}{current_row}:{get_column_letter(total_cols)}{current_row}"
+        apply_conditional_formatting(ws, cf_range, positive_is_good, style)
 
 
 def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: int) -> None:
