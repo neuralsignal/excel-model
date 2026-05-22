@@ -15,6 +15,7 @@ from excel_model.models._sheet_builder import (
     build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
+    resolve_formula_params,
     write_grouped_period_headers,
     write_section_header,
 )
@@ -83,9 +84,7 @@ def _build_bva_model_sheet(
                     col_letter = get_col_letter(col_idx)
                     prior_col_letter = get_col_letter(col_idx - n_sub_cols) if p_idx > 0 else ""
 
-                    params = dict(li.formula_params)
-                    if li.formula_type == "input_ref":
-                        params["line_item_key"] = li.key
+                    params = resolve_formula_params(li)
 
                     ctx = CellContext(
                         period_index=period.index,

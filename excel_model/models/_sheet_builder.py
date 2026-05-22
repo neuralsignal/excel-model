@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from openpyxl.cell import Cell
 from openpyxl.styles import Border, Side
@@ -200,6 +201,14 @@ def write_grouped_period_headers(
         for s_idx, label in enumerate(sub_labels):
             cell = ws.cell(row=3, column=base_col + s_idx, value=label)
             apply_header_style(cell, style)
+
+
+def resolve_formula_params(li: LineItemDef) -> dict[str, Any]:
+    """Return a copy of formula_params with input_ref key injected when needed."""
+    params = dict(li.formula_params)
+    if li.formula_type == "input_ref":
+        params["line_item_key"] = li.key
+    return params
 
 
 def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: int) -> None:
