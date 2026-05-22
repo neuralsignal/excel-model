@@ -202,6 +202,11 @@ def write_grouped_period_headers(
             apply_header_style(cell, style)
 
 
+def effective_format(li: LineItemDef) -> str:
+    """Return li.format, defaulting to 'currency'."""
+    return li.format if li.format else "currency"
+
+
 def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: int) -> None:
     """Write thin vertical border at the first projection column."""
     if n_history > 0:
