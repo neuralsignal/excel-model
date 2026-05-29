@@ -7,7 +7,7 @@ from openpyxl.styles import Alignment
 
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
-from excel_model.models._sheet_builder import write_section_header, write_title_row
+from excel_model.models._sheet_builder import write_four_col_header, write_section_header, write_title_row
 from excel_model.named_ranges import register_named_range
 from excel_model.spec import AssumptionDef, ModelSpec, ScenarioDef
 from excel_model.style import (
@@ -38,18 +38,7 @@ def build_assumptions_sheet(
         ws = wb.create_sheet(title=sheet_name)
 
     write_title_row(ws, f"{spec.title} — Assumptions", 4, style)
-
-    # Row 2: Column headers
-    headers = ["Parameter", "Named Range", "Value", "Format"]
-    for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=header)
-        apply_header_style(cell, style)
-
-    # Column widths
-    ws.column_dimensions["A"].width = 30
-    ws.column_dimensions["B"].width = 25
-    ws.column_dimensions["C"].width = 15
-    ws.column_dimensions["D"].width = 12
+    write_four_col_header(ws, style)
 
     current_row = 3
     assumption_rows: dict[str, int] = {}
@@ -117,16 +106,7 @@ def build_drivers_sheet(
         ws = wb.create_sheet(title=sheet_name)
 
     write_title_row(ws, f"{spec.title} — Drivers", 4, style)
-
-    headers = ["Parameter", "Named Range", "Value", "Format"]
-    for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=header)
-        apply_header_style(cell, style)
-
-    ws.column_dimensions["A"].width = 30
-    ws.column_dimensions["B"].width = 25
-    ws.column_dimensions["C"].width = 15
-    ws.column_dimensions["D"].width = 12
+    write_four_col_header(ws, style)
 
     current_row = 3
     driver_rows: dict[str, int] = {}

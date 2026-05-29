@@ -19,6 +19,7 @@ from excel_model.models._sheet_builder import (
     build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
+    write_four_col_header,
     write_grouped_period_headers,
     write_section_header,
     write_title_row,
@@ -28,7 +29,6 @@ from excel_model.spec import ModelSpec, ScenarioDef
 from excel_model.style import (
     StyleConfig,
     apply_conditional_formatting,
-    apply_header_style,
     apply_section_header_style,
     get_number_format,
 )
@@ -69,16 +69,7 @@ def _build_scenario_assumptions(
     ws = wb.create_sheet(title="Assumptions")
 
     write_title_row(ws, f"{spec.title} — Scenario Assumptions", 4, style)
-
-    headers = ["Parameter", "Named Range", "Value", "Format"]
-    for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=header)
-        apply_header_style(cell, style)
-
-    ws.column_dimensions["A"].width = 30
-    ws.column_dimensions["B"].width = 25
-    ws.column_dimensions["C"].width = 15
-    ws.column_dimensions["D"].width = 12
+    write_four_col_header(ws, style)
 
     current_row = 3
 
