@@ -6,7 +6,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from excel_model.cli import _build_description, _render_description_text, main
+from excel_model.cli import main
+from excel_model.describe import build_description, render_description_text
 
 VALID_P_AND_L_YAML = """\
 model_type: p_and_l
@@ -564,7 +565,7 @@ class TestDescribeValidationErrors:
 
 
 # ---------------------------------------------------------------------------
-# _build_description helper
+# build_description helper
 # ---------------------------------------------------------------------------
 
 
@@ -582,7 +583,7 @@ class TestBuildDescription:
             n_history=spec.n_history_periods,
             granularity=spec.granularity,
         )
-        return _build_description(spec, periods, errors if errors is not None else [])
+        return build_description(spec, periods, errors if errors is not None else [])
 
     def test_returns_expected_keys(self, tmp_path):
         desc = self._load_and_build(tmp_path, VALID_P_AND_L_YAML)
@@ -640,7 +641,7 @@ class TestBuildDescription:
 
 
 # ---------------------------------------------------------------------------
-# _render_description_text helper
+# render_description_text helper
 # ---------------------------------------------------------------------------
 
 
@@ -678,8 +679,8 @@ class TestRenderDescriptionText:
             n_history=spec.n_history_periods,
             granularity=spec.granularity,
         )
-        desc = _build_description(spec, periods, [])
-        text = _render_description_text(desc)
+        desc = build_description(spec, periods, [])
+        text = render_description_text(desc)
         assert "Model: Test P&L" in text
         assert "Type:  p_and_l" in text
         assert "Currency: CHF" in text
@@ -689,14 +690,14 @@ class TestRenderDescriptionText:
 
     def test_renders_validation_errors(self):
         desc = self._minimal_description(validation_errors=["err1", "err2"])
-        text = _render_description_text(desc)
+        text = render_description_text(desc)
         assert "Validation errors (2)" in text
         assert "  - err1" in text
         assert "  - err2" in text
         assert "Validation: OK" not in text
 
     def test_renders_validation_ok(self):
-        text = _render_description_text(self._minimal_description())
+        text = render_description_text(self._minimal_description())
         assert "Validation: OK" in text
         assert "Validation errors" not in text
 
@@ -707,16 +708,16 @@ class TestRenderDescriptionText:
                 {"name": "bull", "label": "Bull", "assumption_overrides": {"Growth": 0.2}},
             ],
         )
-        text = _render_description_text(desc)
+        text = render_description_text(desc)
         assert "Scenarios (2)" in text
         assert "  Base" in text
         assert "Bull (overrides: Growth=0.2)" in text
 
     def test_no_history_skips_history_line(self):
-        text = _render_description_text(self._minimal_description())
+        text = render_description_text(self._minimal_description())
         assert "History" not in text
 
     def test_with_history_shows_history_line(self):
         desc = self._minimal_description(n_history_periods=2, history_labels=["2023", "2024"])
-        text = _render_description_text(desc)
+        text = render_description_text(desc)
         assert "History (2): 2023, 2024" in text
