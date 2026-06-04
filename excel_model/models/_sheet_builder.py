@@ -89,6 +89,23 @@ def group_line_items_by_section(
     return sections_order, sections_items
 
 
+_FOUR_COL_HEADERS = ("Parameter", "Named Range", "Value", "Format")
+_FOUR_COL_WIDTHS = (30, 25, 15, 12)
+
+
+def write_four_col_header(ws: Worksheet, style: StyleConfig) -> None:
+    """Write the standard 4-column header row and set column widths.
+
+    Used by Assumptions, Drivers, and Scenario Assumptions sheets.
+    """
+    col_letters = ("A", "B", "C", "D")
+    for col_idx, header in enumerate(_FOUR_COL_HEADERS, start=1):
+        cell = ws.cell(row=2, column=col_idx, value=header)
+        apply_header_style(cell, style)
+    for letter, width in zip(col_letters, _FOUR_COL_WIDTHS, strict=True):
+        ws.column_dimensions[letter].width = width
+
+
 def write_title_row(ws: Worksheet, title: str, total_cols: int, style: StyleConfig) -> None:
     """Write merged title row (row 1) with header styling."""
     ws.merge_cells(f"A1:{get_column_letter(total_cols)}1")
