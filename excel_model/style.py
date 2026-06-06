@@ -3,7 +3,10 @@
 from dataclasses import dataclass
 
 from openpyxl.cell.cell import Cell
+from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.worksheet import Worksheet
 
 from excel_model.spec import AssumptionDef
@@ -98,11 +101,8 @@ def apply_conditional_formatting(
     positive_is_good=True: positive = green, negative = red.
     positive_is_good=False: positive = red, negative = green (e.g. costs).
     """
-    from openpyxl.formatting.rule import CellIsRule
-    from openpyxl.styles import PatternFill as _PatternFill
-
-    green_fill = _PatternFill(fgColor="C6EFCE", fill_type="solid")
-    red_fill = _PatternFill(fgColor="FFC7CE", fill_type="solid")
+    green_fill = PatternFill(fgColor="C6EFCE", fill_type="solid")
+    red_fill = PatternFill(fgColor="FFC7CE", fill_type="solid")
 
     if positive_is_good:
         ws.conditional_formatting.add(
@@ -136,9 +136,6 @@ def apply_assumption_sheet_validation(
     - Format column: dropdown list of allowed format types.
     - Value column: 0-1 numeric bounds for percent-type assumptions.
     """
-    from openpyxl.utils import get_column_letter
-    from openpyxl.worksheet.datavalidation import DataValidation
-
     n = len(assumptions)
     if n == 0:
         return
