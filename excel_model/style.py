@@ -6,6 +6,8 @@ from openpyxl.cell.cell import Cell
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.worksheet import Worksheet
 
+from excel_model.spec import AssumptionDef
+
 
 @dataclass(frozen=True)
 class StyleConfig:
@@ -124,7 +126,7 @@ def apply_conditional_formatting(
 
 def apply_assumption_sheet_validation(
     ws: Worksheet,
-    assumptions: list,
+    assumptions: list[AssumptionDef],
     value_col: int,
     format_col: int,
     start_row: int,
@@ -160,7 +162,7 @@ def apply_assumption_sheet_validation(
 
     # Per-row decimal bounds for percent-type assumptions
     for i, assumption in enumerate(assumptions):
-        if getattr(assumption, "format", None) == "percent":
+        if assumption.format == "percent":
             row = start_row + i
             cell_ref = f"{value_col_letter}{row}"
             dv_pct = DataValidation(
