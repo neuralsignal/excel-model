@@ -72,12 +72,7 @@ def _render_growth_projected(
     prior_key = params.get("prior_key")
     rate_name = _resolve_name(growth_name, ctx)
 
-    if ctx.period_index == 0 or ctx.period_index == ctx.n_history:
-        if ctx.prior_col_letter:
-            if prior_key and prior_key in ctx.row_map:
-                prior_row = ctx.row_map[prior_key]
-                return f"=${ctx.prior_col_letter}${prior_row}*(1+{rate_name})"
-            return f"=${ctx.prior_col_letter}${ctx.row}*(1+{rate_name})"
+    if (ctx.period_index == 0 or ctx.period_index == ctx.n_history) and not ctx.prior_col_letter:
         return f"=1*(1+{rate_name})"
     if prior_key and prior_key in ctx.row_map:
         prior_row = ctx.row_map[prior_key]
