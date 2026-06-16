@@ -38,7 +38,7 @@ def _load_df(source_path: str, sheet: str) -> pl.DataFrame:
         return pl.read_json(source_path)
 
     if suffix in (".yaml", ".yml"):
-        with path.open() as f:
+        with path.open(encoding="utf-8") as f:
             data = yaml.safe_load(f)
         if isinstance(data, list):
             return pl.DataFrame(data)
@@ -53,7 +53,7 @@ def _load_df(source_path: str, sheet: str) -> pl.DataFrame:
 def _load_markdown_table(source_path: str) -> pl.DataFrame:
     """Parse the first markdown pipe table found in the file."""
     path = Path(source_path)
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
 
     lines = text.splitlines()
     table_lines: list[str] = []

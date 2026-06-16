@@ -20,6 +20,14 @@ def build_workbook(
 
     Creates Assumptions, Inputs, and Model sheets.
     Dispatches to the appropriate model builder based on spec.model_type.
+
+    Security: ``output_path`` is trusted. Its parent directories are created
+    with ``mkdir(parents=True)`` and the file is written without any containment
+    check, so passing an attacker-controlled path lets the caller create
+    arbitrary directory trees and overwrite arbitrary files. Callers must
+    validate ``output_path`` (e.g. confirm it resolves within an allowed base
+    directory) before invoking this function from any untrusted or networked
+    context.
     """
     wb = Workbook()
     # Remove default sheet

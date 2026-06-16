@@ -66,7 +66,6 @@ def _build_bva_model_sheet(
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 4)
 
-    # Write data
     current_row = 4
     for section in sections_order:
         if section:

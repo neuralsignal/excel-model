@@ -145,17 +145,14 @@ def build(spec: str, output: str, style: str | None, data: str | None, mode: str
 )
 def validate(spec: str, data: str | None) -> None:
     """Validate a model spec YAML file."""
-    # Load spec
     try:
         loaded_spec = load_spec(spec)
     except (FileNotFoundError, ValueError, KeyError) as e:
         click.echo(f"ERROR: {e}")
         sys.exit(1)
 
-    # Validate spec
     errors = validate_spec(loaded_spec)
 
-    # Optionally validate input data columns
     if data:
         try:
             value_cols = list(loaded_spec.inputs.value_cols.values())

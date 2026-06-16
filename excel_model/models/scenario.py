@@ -79,7 +79,6 @@ def _build_scenario_assumptions(
     for scenario in spec.scenarios:
         prefix = _scenario_prefix(scenario)
 
-        # Scenario section header
         ws.merge_cells(f"A{current_row}:D{current_row}")
         sec_cell = ws[f"A{current_row}"]
         sec_cell.value = sanitize_cell_text(f"{scenario.label} Assumptions")
@@ -132,7 +131,6 @@ def _build_scenario_model_sheet(
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 4)
 
-    # Write data
     current_row = 4
     for section in sections_order:
         if section:
@@ -154,7 +152,6 @@ def _build_scenario_model_sheet(
 
                     params = resolve_formula_params(li)
 
-                    # Build named_ranges: assumptions + drivers
                     all_named = {a.name: a.name for a in spec.assumptions}
                     for d in spec.drivers:
                         all_named[d.name] = d.name

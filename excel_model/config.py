@@ -1,21 +1,25 @@
 """Configuration loading with bundled defaults and deep-merge."""
 
+import re
 from importlib import resources
 from pathlib import Path
+from typing import Any
 
 import yaml
 
 from excel_model.exceptions import StyleConfigError
 from excel_model.style import StyleConfig
 
+_HEX_COLOR_RE = re.compile(r"^#?[0-9A-Fa-f]{6}$")
 
-def _load_default_style_yaml() -> dict:
+
+def _load_default_style_yaml() -> dict[str, Any]:
     """Load the bundled default style config."""
     ref = resources.files("excel_model") / "defaults" / "default_style.yaml"
     return yaml.safe_load(ref.read_text(encoding="utf-8"))
 
 
-def _deep_merge(base: dict, override: dict) -> dict:
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """Recursively merge override into base. Override values win."""
     result = dict(base)
     for key, value in override.items():
@@ -38,7 +42,7 @@ def load_style(style_path: str | None) -> StyleConfig:
         p = Path(style_path)
         if not p.exists():
             raise StyleConfigError(f"Style config not found: {style_path}")
-        with p.open() as f:
+        with p.open(encoding="utf-8") as f:
             user_data = yaml.safe_load(f) or {}
         merged = _deep_merge(defaults, user_data)
     else:
@@ -62,6 +66,13 @@ def load_style(style_path: str | None) -> StyleConfig:
     missing = [k for k in required if k not in merged]
     if missing:
         raise StyleConfigError(f"Style config missing required keys: {missing}")
+
+    for key, value in merged.items():
+        if (key.endswith("_fill_hex") or key.endswith("_font_color")) and not _HEX_COLOR_RE.match(str(value)):
+            raise StyleConfigError(
+                f"Style config key {key!r} has invalid color value {value!r}. "
+                f"Must be a 6-digit hex color (e.g. 'FF8800' or '#FF8800')."
+            )
 
     return StyleConfig(
         header_fill_hex=merged["header_fill_hex"],

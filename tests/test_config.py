@@ -164,6 +164,36 @@ class TestLoadStyle:
         result = load_style(str(p))
         assert isinstance(result, StyleConfig)
 
+    @pytest.mark.parametrize(
+        "bad_value",
+        ["ZZZZZZ", "red", "12345", "1234567", "#GGGGGG", ""],
+        ids=["non_hex", "name", "too_short", "too_long", "hash_non_hex", "empty"],
+    )
+    def test_invalid_fill_hex_raises(self, tmp_path: object, bad_value: str) -> None:
+        import pathlib
+
+        p = pathlib.Path(str(tmp_path)) / "bad_color.yaml"
+        p.write_text(f'header_fill_hex: "{bad_value}"\n')
+        with pytest.raises(StyleConfigError, match="invalid color value"):
+            load_style(str(p))
+
+    def test_invalid_font_color_raises(self, tmp_path: object) -> None:
+        import pathlib
+
+        p = pathlib.Path(str(tmp_path)) / "bad_font_color.yaml"
+        p.write_text('header_font_color: "notacolor"\n')
+        with pytest.raises(StyleConfigError, match="invalid color value"):
+            load_style(str(p))
+
+    @pytest.mark.parametrize("good_value", ["FF8800", "ff8800", "#FF8800", "000000"])
+    def test_valid_hex_colors_accepted(self, tmp_path: object, good_value: str) -> None:
+        import pathlib
+
+        p = pathlib.Path(str(tmp_path)) / "good_color.yaml"
+        p.write_text(f'header_fill_hex: "{good_value}"\n')
+        result = load_style(str(p))
+        assert result.header_fill_hex == good_value
+
     def test_user_yaml_missing_required_keys_after_merge_raises(self, tmp_path: object) -> None:
         """If bundled defaults somehow lacked keys AND user doesn't supply them,
         StyleConfigError should be raised. We simulate by monkeypatching."""

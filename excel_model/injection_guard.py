@@ -25,6 +25,8 @@ _DANGEROUS_FORMULA_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bRTD\s*\(", re.IGNORECASE),
     re.compile(r"\bINDIRECT\s*\(", re.IGNORECASE),
     re.compile(r"\bENCODEURL\s*\(", re.IGNORECASE),
+    re.compile(r"\bCELL\s*\(", re.IGNORECASE),
+    re.compile(r"\bINFO\s*\(", re.IGNORECASE),
 )
 
 # Pipe-based DDE invocations like =CMD|'/c calc'!A0

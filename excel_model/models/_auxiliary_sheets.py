@@ -43,7 +43,6 @@ def build_assumptions_sheet(
     current_row = 3
     assumption_rows: dict[str, int] = {}
 
-    # Group assumptions by group
     groups: dict[str, list[AssumptionDef]] = {}
     for assumption in spec.assumptions:
         groups.setdefault(assumption.group, []).append(assumption)
@@ -71,12 +70,10 @@ def build_assumptions_sheet(
 
             assumption_rows[assumption.name] = current_row
 
-            # Register named range — column C = column index 3
             register_named_range(wb, range_name, sheet_name, current_row, 3)
 
             current_row += 1
 
-        # Apply data validation to this group's assumption rows
         apply_assumption_sheet_validation(
             ws=ws,
             assumptions=assumptions,
@@ -170,11 +167,10 @@ def build_inputs_sheet(
         ws["A2"] = "No history periods defined."
         return {}
 
-    # Row 2: Column headers — "Line Item" + period labels
     header_cell = ws.cell(row=2, column=1, value="Line Item")
     apply_header_style(header_cell, style)
     for col_idx, period in enumerate(history_periods, start=2):
-        cell = ws.cell(row=2, column=col_idx, value=period.label)
+        cell = ws.cell(row=2, column=col_idx, value=sanitize_cell_text(period.label))
         apply_header_style(cell, style)
 
     ws.column_dimensions["A"].width = 28
@@ -186,14 +182,12 @@ def build_inputs_sheet(
     inputs_row_map: dict[str, int] = {}
     current_row = 3
 
-    # One row per value_col mapping
     for line_item_key, source_col in spec.inputs.value_cols.items():
         label_cell = ws.cell(row=current_row, column=1, value=line_item_key)
         apply_normal_style(label_cell, style)
 
         inputs_row_map[line_item_key] = current_row
 
-        # Fill history data from inputs DataFrame
         for col_idx, period in enumerate(history_periods, start=2):
             period_val = None
             if inputs.period_col in inputs.df.columns and source_col in inputs.df.columns:

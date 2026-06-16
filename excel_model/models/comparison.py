@@ -2,6 +2,7 @@
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
+from openpyxl.worksheet.worksheet import Worksheet
 
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import render_formula
@@ -41,15 +42,15 @@ def build_comparison(
 
 
 def _write_entity_headers(
-    ws: object,
+    ws: Worksheet,
     spec: ModelSpec,
     style: StyleConfig,
 ) -> None:
     """Write entity label headers (row 2)."""
-    label_header = ws.cell(row=2, column=1, value="Metric")  # type: ignore[union-attr]
+    label_header = ws.cell(row=2, column=1, value="Metric")
     apply_header_style(label_header, style)
     for e_idx, entity in enumerate(spec.entities):
-        cell = ws.cell(row=2, column=2 + e_idx, value=sanitize_cell_text(entity.label))  # type: ignore[union-attr]
+        cell = ws.cell(row=2, column=2 + e_idx, value=sanitize_cell_text(entity.label))
         apply_header_style(cell, style)
 
 
@@ -75,7 +76,6 @@ def _build_comparison_model_sheet(
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 3)
 
-    # Write data
     current_row = 3
     for section in sections_order:
         if section:
