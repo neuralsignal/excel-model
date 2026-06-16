@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from excel_model.formula_types import CellContext, FormulaType
+from excel_model.injection_guard import validate_custom_formula
 
 
 def _entity_range_for_row(entity_col_range: str, row: int) -> str:
@@ -204,8 +205,6 @@ def _render_custom(
     params: dict[str, Any],
     ctx: CellContext,
 ) -> str:
-    from excel_model.injection_guard import validate_custom_formula
-
     raw = params["formula"]
     line_item_key = params.get("_line_item_key", "<unknown>")
     validate_custom_formula(raw, line_item_key)
