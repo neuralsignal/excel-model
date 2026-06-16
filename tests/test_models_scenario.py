@@ -606,3 +606,24 @@ def test_scenario_variance_conditional_formatting(style):
     # Variance row (row 6) should have conditional formatting rules
     cf_rules = ws.conditional_formatting
     assert len(cf_rules) >= 2, f"Expected at least 2 conditional formatting rules, got {len(cf_rules)}"
+
+
+def test_legacy_scenario_assumptions_apply_normal_style(scenario_spec, style):
+    """Regression: _build_scenario_assumptions must apply_normal_style to all data cells."""
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    periods = generate_periods("2025", 3, 0, "annual")
+    build_scenario(wb, scenario_spec, None, style, periods)
+
+    ws = wb["Assumptions"]
+    # Data rows start at row 4 (row 1=title, row 2=header, row 3=section header)
+    for row in ws.iter_rows(min_row=4):
+        for cell in row:
+            if cell.value is not None:
+                assert cell.font.name == style.font_name, (
+                    f"Cell {cell.coordinate} font={cell.font.name}, expected {style.font_name}"
+                )
+                assert cell.font.size == style.font_size, (
+                    f"Cell {cell.coordinate} size={cell.font.size}, expected {style.font_size}"
+                )

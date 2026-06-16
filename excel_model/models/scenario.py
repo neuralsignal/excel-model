@@ -29,6 +29,7 @@ from excel_model.spec import ModelSpec, ScenarioDef
 from excel_model.style import (
     StyleConfig,
     apply_conditional_formatting,
+    apply_normal_style,
     apply_section_header_style,
     get_number_format,
 )
@@ -95,7 +96,12 @@ def _build_scenario_assumptions(
             value_cell.number_format = get_number_format(assumption.format, style)
             value_cell.alignment = Alignment(horizontal="right")
 
+            apply_normal_style(ws.cell(row=current_row, column=1), style)
+            apply_normal_style(ws.cell(row=current_row, column=2), style)
+            apply_normal_style(value_cell, style)
+
             ws.cell(row=current_row, column=4, value=assumption.format)
+            apply_normal_style(ws.cell(row=current_row, column=4), style)
 
             register_named_range(wb, range_name, "Assumptions", current_row, 3)
             current_row += 1
