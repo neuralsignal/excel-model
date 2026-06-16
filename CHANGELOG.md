@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.7](https://github.com/neuralsignal/excel-model/compare/v0.1.6...v0.1.7) (2026-06-16)
+
+
+### Bug Fixes
+
+* add missing apply_normal_style calls in _build_scenario_assumptions ([#180](https://github.com/neuralsignal/excel-model/issues/180)) ([c7e861e](https://github.com/neuralsignal/excel-model/commit/c7e861e4ed6b1787fe4565edbb5c7167d6faf338))
+* dcf _write_standard_cells respects li.format instead of hardcoding currency ([#149](https://github.com/neuralsignal/excel-model/issues/149)) ([19116aa](https://github.com/neuralsignal/excel-model/commit/19116aae43cb14399e8552a80925b04eb6cbf0db))
+* harden cell/formula handling and validate colors ([3e320c2](https://github.com/neuralsignal/excel-model/commit/3e320c2b9fd56f7c97faeb2b54d376b635aa7b6d))
+* import CellContext from formula_types instead of formula_engine ([#144](https://github.com/neuralsignal/excel-model/issues/144)) ([6a34b2b](https://github.com/neuralsignal/excel-model/commit/6a34b2bbdeb49dc0ff7d12638227299e905199dc))
+* remove duplicated return arms in _render_growth_projected ([#178](https://github.com/neuralsignal/excel-model/issues/178)) ([75fcd2d](https://github.com/neuralsignal/excel-model/commit/75fcd2dd5acf2e869df11e5c1f12164c960367c7))
+* type assumptions parameter as list[AssumptionDef] in style.py ([#171](https://github.com/neuralsignal/excel-model/issues/171)) ([d3cc235](https://github.com/neuralsignal/excel-model/commit/d3cc235d61b1e55cc9085c894357806da7d2afec))
+
 ## [0.1.6](https://github.com/neuralsignal/excel-model/compare/v0.1.5...v0.1.6) (2026-05-19)
 
 
