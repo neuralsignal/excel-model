@@ -11,9 +11,18 @@ from excel_model.models._auxiliary_sheets import (
     build_drivers_sheet,
     build_inputs_sheet,
 )
-from excel_model.models._sheet_builder import apply_data_cell_style
+from excel_model.models._sheet_builder import apply_data_cell_style, write_grouped_period_headers
 from excel_model.spec import DriverDef, InputsDef, LineItemDef, ModelSpec, ScenarioDef
 from excel_model.time_engine import Period
+
+
+def test_grouped_period_headers_sanitize_malicious_label(sample_style):
+    """Period labels are escaped before being written (defense-in-depth)."""
+    wb = Workbook()
+    ws = wb.create_sheet(title="Model")
+    periods = [Period(label="=HACK()", index=0, is_history=False)]
+    write_grouped_period_headers(ws, periods, ("Plan",), 1, sample_style)
+    assert ws.cell(row=2, column=2).value == "'=HACK()"
 
 
 def test_build_assumptions_sheet_reuses_existing_sheet(basic_spec, sample_style):

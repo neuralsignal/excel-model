@@ -197,7 +197,7 @@ def write_grouped_period_headers(
         base_col = 2 + p_idx * n_sub_cols
         end_col = base_col + n_sub_cols - 1
         ws.merge_cells(f"{get_column_letter(base_col)}2:{get_column_letter(end_col)}2")
-        ph = ws.cell(row=2, column=base_col, value=period.label)
+        ph = ws.cell(row=2, column=base_col, value=sanitize_cell_text(period.label))
         apply_header_style(ph, style)
 
     sub_label_cell = ws.cell(row=3, column=1, value="")

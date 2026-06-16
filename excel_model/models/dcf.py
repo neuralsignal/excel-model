@@ -132,9 +132,8 @@ def _build_dcf_model_sheet(
 
     build_model_header(ws, spec.title, total_cols, style, HeaderLayout("Line Item", 14, "B3"))
 
-    # Row 2: Period labels
     for col_idx, period in enumerate(periods, start=2):
-        cell = ws.cell(row=2, column=col_idx, value=period.label)
+        cell = ws.cell(row=2, column=col_idx, value=sanitize_cell_text(period.label))
         if period.is_history:
             apply_history_col_style(cell, style)
             cell.font = Font(name=style.font_name, size=style.font_size, bold=True)
@@ -154,7 +153,6 @@ def _build_dcf_model_sheet(
         style=style,
     )
 
-    # Write data
     current_row = 3
     for section in sections_order:
         if section:

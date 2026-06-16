@@ -176,3 +176,32 @@ class TestColumnGroupLabelInjection:
         )
         errors = validate_spec(spec)
         assert any("column group" in e and "formula injection" in e.lower() for e in errors)
+
+
+class TestColumnGroupColorHex:
+    def test_invalid_color_hex_rejected(self):
+        spec = make_minimal_spec(
+            model_type="budget_vs_actuals",
+            column_groups=(ColumnGroupDef(key="plan", label="Plan", color_hex="ZZZZZZ"),),
+        )
+        errors = validate_spec(spec)
+        assert any("color_hex" in e and "plan" in e for e in errors)
+
+    def test_too_short_color_hex_rejected(self):
+        spec = make_minimal_spec(
+            model_type="budget_vs_actuals",
+            column_groups=(ColumnGroupDef(key="plan", label="Plan", color_hex="FFF"),),
+        )
+        errors = validate_spec(spec)
+        assert any("color_hex" in e for e in errors)
+
+    def test_valid_color_hex_accepted(self):
+        spec = make_minimal_spec(
+            model_type="budget_vs_actuals",
+            column_groups=(
+                ColumnGroupDef(key="plan", label="Plan", color_hex="FF8800"),
+                ColumnGroupDef(key="actual", label="Actual", color_hex="#aabbcc"),
+            ),
+        )
+        errors = validate_spec(spec)
+        assert not any("color_hex" in e for e in errors)
