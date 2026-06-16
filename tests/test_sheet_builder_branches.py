@@ -11,7 +11,7 @@ from excel_model.models._auxiliary_sheets import (
     build_drivers_sheet,
     build_inputs_sheet,
 )
-from excel_model.models._sheet_builder import apply_data_cell_style, set_column_widths
+from excel_model.models._sheet_builder import apply_data_cell_style
 from excel_model.spec import DriverDef, InputsDef, LineItemDef, ModelSpec, ScenarioDef
 from excel_model.time_engine import Period
 
@@ -216,14 +216,3 @@ class TestApplyDataCellStyleHistoryCallCount:
         apply_data_cell_style(cell, li, sample_style, is_history=False)
 
         assert mock_history.call_count == 0
-
-
-class TestSetColumnWidths:
-    def test_sets_label_and_data_column_widths(self):
-        wb = Workbook()
-        ws = wb.active
-        set_column_widths(ws, total_cols=4, label_width=30.0, data_width=14.0)
-        assert ws.column_dimensions["A"].width == 30.0
-        assert ws.column_dimensions["B"].width == 14.0
-        assert ws.column_dimensions["C"].width == 14.0
-        assert ws.column_dimensions["D"].width == 14.0

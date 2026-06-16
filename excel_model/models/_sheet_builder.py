@@ -181,18 +181,6 @@ def compute_proj_col_range(
     )
 
 
-def set_column_widths(
-    ws: Worksheet,
-    total_cols: int,
-    label_width: float,
-    data_width: float,
-) -> None:
-    """Set column A width and uniform data column widths."""
-    ws.column_dimensions["A"].width = label_width
-    for col_idx in range(2, total_cols + 1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = data_width
-
-
 def write_grouped_period_headers(
     ws: Worksheet,
     periods: list[Period],
