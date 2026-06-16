@@ -7,7 +7,7 @@ schema violations) and dacite for dataclass construction.
 from pathlib import Path
 from typing import Any
 
-from strictyaml import load as syaml_load  # noqa: F401 (re-exported for callers)
+from strictyaml import load as syaml_load
 
 from excel_model.spec import (
     AssumptionDef,
