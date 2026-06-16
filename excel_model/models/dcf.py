@@ -113,7 +113,8 @@ def _write_standard_cells(
 
         value = render_formula(li.formula_type, params, ctx)
         cell = ws.cell(row=row, column=col_idx, value=value)
-        cell.number_format = get_number_format("currency", render_ctx.style)
+        fmt = li.format if li.format else "currency"
+        cell.number_format = get_number_format(fmt, render_ctx.style)
         cell.alignment = Alignment(horizontal="right")
         apply_data_cell_style(cell, li, render_ctx.style, period.is_history)
 
