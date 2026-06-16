@@ -7,6 +7,8 @@ from hypothesis import strategies as st
 
 from excel_model.exceptions import FormulaInjectionError
 from excel_model.formula_engine import CellContext, _row_ref, render_formula
+from excel_model.injection_guard import validate_custom_formula
+from excel_model.input_validator import validate_inputs_against_spec
 from excel_model.loader import InputData
 from excel_model.spec import (
     DriverDef,
@@ -15,11 +17,7 @@ from excel_model.spec import (
     ModelSpec,
 )
 from excel_model.time_engine import _parse_monthly, _parse_quarterly
-from excel_model.validator import (
-    validate_custom_formula,
-    validate_inputs_against_spec,
-    validate_spec,
-)
+from excel_model.validator import validate_spec
 
 # ---------------------------------------------------------------------------
 # Helpers

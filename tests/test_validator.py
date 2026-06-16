@@ -2,6 +2,7 @@
 
 import polars as pl
 
+from excel_model.input_validator import validate_inputs_against_spec
 from excel_model.loader import InputData
 from excel_model.spec import (
     AssumptionDef,
@@ -11,7 +12,7 @@ from excel_model.spec import (
     MetadataDef,
     ModelSpec,
 )
-from excel_model.validator import validate_inputs_against_spec, validate_spec
+from excel_model.validator import validate_spec
 
 
 def make_minimal_spec(**overrides) -> ModelSpec:
