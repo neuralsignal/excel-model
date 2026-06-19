@@ -1,6 +1,5 @@
 """Configuration loading with bundled defaults and deep-merge."""
 
-import re
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -8,9 +7,7 @@ from typing import Any
 import yaml
 
 from excel_model.exceptions import StyleConfigError
-from excel_model.style import StyleConfig
-
-_HEX_COLOR_RE = re.compile(r"^#?[0-9A-Fa-f]{6}$")
+from excel_model.style import HEX_COLOR_RE, StyleConfig
 
 
 def _load_default_style_yaml() -> dict[str, Any]:
@@ -68,7 +65,7 @@ def load_style(style_path: str | None) -> StyleConfig:
         raise StyleConfigError(f"Style config missing required keys: {missing}")
 
     for key, value in merged.items():
-        if (key.endswith("_fill_hex") or key.endswith("_font_color")) and not _HEX_COLOR_RE.match(str(value)):
+        if (key.endswith("_fill_hex") or key.endswith("_font_color")) and not HEX_COLOR_RE.match(str(value)):
             raise StyleConfigError(
                 f"Style config key {key!r} has invalid color value {value!r}. "
                 f"Must be a 6-digit hex color (e.g. 'FF8800' or '#FF8800')."

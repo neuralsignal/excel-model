@@ -1,5 +1,6 @@
 """StyleConfig dataclass and openpyxl cell applier functions."""
 
+import re
 from dataclasses import dataclass
 
 from openpyxl.cell.cell import Cell
@@ -10,6 +11,8 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.worksheet import Worksheet
 
 from excel_model.spec import AssumptionDef
+
+HEX_COLOR_RE = re.compile(r"^#?[0-9A-Fa-f]{6}$")
 
 
 @dataclass(frozen=True)
