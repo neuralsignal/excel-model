@@ -4,7 +4,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment
 
 from excel_model.formula_engine import render_formula
-from excel_model.formula_types import CellContext
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import (
@@ -14,12 +13,14 @@ from excel_model.models._auxiliary_sheets import (
 )
 from excel_model.models._sheet_builder import (
     HeaderLayout,
+    SheetRenderContext,
     apply_label_style,
     assign_row_map,
     build_model_header,
     compute_proj_col_range,
     effective_format,
     group_line_items_by_section,
+    make_cell_context,
     maybe_apply_variance_formatting,
     resolve_formula_params,
     write_four_col_header,
@@ -131,6 +132,20 @@ def _build_scenario_model_sheet(
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 4)
 
+    all_named: dict[str, str] = {a.name: a.name for a in spec.assumptions}
+    for d in spec.drivers:
+        all_named[d.name] = d.name
+
+    render_ctx = SheetRenderContext(
+        row_map=row_map,
+        inputs_row_map=inputs_row_map,
+        first_proj_col_letter=first_proj_col_letter,
+        last_proj_col_letter=last_proj_col_letter,
+        n_history=spec.n_history_periods,
+        named_ranges=all_named,
+        style=style,
+    )
+
     current_row = 4
     for section in sections_order:
         if section:
@@ -152,23 +167,14 @@ def _build_scenario_model_sheet(
 
                     params = resolve_formula_params(li)
 
-                    all_named = {a.name: a.name for a in spec.assumptions}
-                    for d in spec.drivers:
-                        all_named[d.name] = d.name
-
-                    ctx = CellContext(
-                        period_index=period.index,
-                        n_history=spec.n_history_periods,
-                        row=current_row,
-                        col=col_idx,
-                        col_letter=col_letter,
-                        prior_col_letter=prior_col_letter,
-                        named_ranges=all_named,
-                        row_map=row_map,
-                        inputs_row_map=inputs_row_map,
+                    ctx = make_cell_context(
+                        render_ctx,
+                        period.index,
+                        col_idx,
+                        col_letter,
+                        prior_col_letter,
+                        current_row,
                         scenario_prefix=prefix,
-                        first_proj_col_letter=first_proj_col_letter,
-                        last_proj_col_letter=last_proj_col_letter,
                         entity_col_range="",
                         driver_names=frozenset(d.name for d in spec.drivers),
                     )

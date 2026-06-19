@@ -5,12 +5,12 @@ from openpyxl.styles import Alignment, Font
 
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import render_formula
-from excel_model.formula_types import CellContext
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
     HeaderLayout,
+    SheetRenderContext,
     apply_data_cell_style,
     apply_label_style,
     assign_row_map,
@@ -18,6 +18,7 @@ from excel_model.models._sheet_builder import (
     compute_proj_col_range,
     effective_format,
     group_line_items_by_section,
+    make_cell_context,
     resolve_formula_params,
     write_history_border,
     write_section_header,
@@ -70,6 +71,16 @@ def _build_model_sheet(
     sections_order, sections_items = group_line_items_by_section(spec.line_items)
     row_map = assign_row_map(sections_order, sections_items, 3)
 
+    render_ctx = SheetRenderContext(
+        row_map=row_map,
+        inputs_row_map=inputs_row_map,
+        first_proj_col_letter=first_proj_col_letter,
+        last_proj_col_letter=last_proj_col_letter,
+        n_history=spec.n_history_periods,
+        named_ranges={a.name: a.name for a in spec.assumptions},
+        style=style,
+    )
+
     current_row = 3
     for section in sections_order:
         if section:
@@ -89,19 +100,14 @@ def _build_model_sheet(
 
                 params = resolve_formula_params(li)
 
-                ctx = CellContext(
-                    period_index=period.index,
-                    n_history=spec.n_history_periods,
-                    row=current_row,
-                    col=col_idx,
-                    col_letter=col_letter,
-                    prior_col_letter=prior_col_letter,
-                    named_ranges={a.name: a.name for a in spec.assumptions},
-                    row_map=row_map,
-                    inputs_row_map=inputs_row_map,
+                ctx = make_cell_context(
+                    render_ctx,
+                    period.index,
+                    col_idx,
+                    col_letter,
+                    prior_col_letter,
+                    current_row,
                     scenario_prefix="",
-                    first_proj_col_letter=first_proj_col_letter,
-                    last_proj_col_letter=last_proj_col_letter,
                     entity_col_range="",
                     driver_names=frozenset(),
                 )

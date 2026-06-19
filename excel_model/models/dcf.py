@@ -6,7 +6,6 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import render_formula
-from excel_model.formula_types import CellContext
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
@@ -19,6 +18,7 @@ from excel_model.models._sheet_builder import (
     build_model_header,
     compute_proj_col_range,
     group_line_items_by_section,
+    make_cell_context,
     resolve_formula_params,
     write_history_border,
     write_section_header,
@@ -56,19 +56,14 @@ def _write_npv_sum_cell(
     """Write NPV_SUM formula in the first data column, spanning all projection cols."""
     first_data_col = 2
     col_letter = get_col_letter(first_data_col)
-    ctx = CellContext(
-        period_index=0,
-        n_history=render_ctx.n_history,
-        row=row,
-        col=first_data_col,
-        col_letter=col_letter,
-        prior_col_letter="",
-        named_ranges=render_ctx.named_ranges,
-        row_map=render_ctx.row_map,
-        inputs_row_map=render_ctx.inputs_row_map,
+    ctx = make_cell_context(
+        render_ctx,
+        0,
+        first_data_col,
+        col_letter,
+        "",
+        row,
         scenario_prefix="",
-        first_proj_col_letter=render_ctx.first_proj_col_letter,
-        last_proj_col_letter=render_ctx.last_proj_col_letter,
         entity_col_range="",
         driver_names=frozenset(),
     )
@@ -93,19 +88,14 @@ def _write_standard_cells(
 
         params = resolve_formula_params(li)
 
-        ctx = CellContext(
-            period_index=period.index,
-            n_history=render_ctx.n_history,
-            row=row,
-            col=col_idx,
-            col_letter=col_letter,
-            prior_col_letter=prior_col_letter,
-            named_ranges=render_ctx.named_ranges,
-            row_map=render_ctx.row_map,
-            inputs_row_map=render_ctx.inputs_row_map,
+        ctx = make_cell_context(
+            render_ctx,
+            period.index,
+            col_idx,
+            col_letter,
+            prior_col_letter,
+            row,
             scenario_prefix="",
-            first_proj_col_letter=render_ctx.first_proj_col_letter,
-            last_proj_col_letter=render_ctx.last_proj_col_letter,
             entity_col_range="",
             driver_names=frozenset(),
         )
