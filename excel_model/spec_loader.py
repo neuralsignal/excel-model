@@ -101,6 +101,27 @@ def _build_metadata(raw: dict[str, Any] | None) -> MetadataDef:
     )
 
 
+def _build_model_spec(data: dict[str, Any]) -> ModelSpec:
+    """Map validated YAML data to a ModelSpec dataclass."""
+    return ModelSpec(
+        model_type=data["model_type"],
+        title=data["title"],
+        currency=data["currency"],
+        granularity=data["granularity"],
+        start_period=str(data["start_period"]),
+        n_periods=int(data["n_periods"]),
+        n_history_periods=int(data["n_history_periods"]),
+        assumptions=tuple(_build_assumption(a) for a in (data.get("assumptions") or [])),
+        drivers=tuple(_build_driver(d) for d in (data.get("drivers") or [])),
+        line_items=tuple(_build_line_item(li) for li in (data.get("line_items") or [])),
+        metadata=_build_metadata(data.get("metadata")),
+        scenarios=tuple(_build_scenario(s) for s in (data.get("scenarios") or [])),
+        column_groups=tuple(_build_column_group(cg) for cg in (data.get("column_groups") or [])),
+        inputs=_build_inputs(data.get("inputs")),
+        entities=tuple(_build_entity(e) for e in (data.get("entities") or [])),
+    )
+
+
 def load_spec(path: str) -> ModelSpec:
     """Load a YAML model spec and return a ModelSpec.
 
@@ -113,31 +134,4 @@ def load_spec(path: str) -> ModelSpec:
 
     text = p.read_text(encoding="utf-8")
     validated = syaml_load(text, SPEC_SCHEMA)
-    data: dict[str, Any] = validated.data
-
-    assumptions = tuple(_build_assumption(a) for a in (data.get("assumptions") or []))
-    drivers = tuple(_build_driver(d) for d in (data.get("drivers") or []))
-    line_items = tuple(_build_line_item(li) for li in (data.get("line_items") or []))
-    scenarios = tuple(_build_scenario(s) for s in (data.get("scenarios") or []))
-    column_groups = tuple(_build_column_group(cg) for cg in (data.get("column_groups") or []))
-    entities = tuple(_build_entity(e) for e in (data.get("entities") or []))
-    inputs = _build_inputs(data.get("inputs"))
-    metadata = _build_metadata(data.get("metadata"))
-
-    return ModelSpec(
-        model_type=data["model_type"],
-        title=data["title"],
-        currency=data["currency"],
-        granularity=data["granularity"],
-        start_period=str(data["start_period"]),
-        n_periods=int(data["n_periods"]),
-        n_history_periods=int(data["n_history_periods"]),
-        assumptions=assumptions,
-        drivers=drivers,
-        line_items=line_items,
-        metadata=metadata,
-        scenarios=scenarios,
-        column_groups=column_groups,
-        inputs=inputs,
-        entities=entities,
-    )
+    return _build_model_spec(validated.data)

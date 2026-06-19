@@ -76,6 +76,24 @@ def check_formula_params(spec: ModelSpec) -> list[str]:
     return errors
 
 
+def _check_single_key_ref(li_key: str, param_name: str, param_value: object, valid_keys: set[str]) -> list[str]:
+    """Check a single-key reference param against valid line item keys."""
+    if isinstance(param_value, str) and param_value and param_value not in valid_keys:
+        return [f"Line item {li_key!r} references unknown key {param_value!r} via {param_name!r}"]
+    return []
+
+
+def _check_list_key_ref(li_key: str, param_name: str, param_value: object, valid_keys: set[str]) -> list[str]:
+    """Check a list-of-keys reference param against valid line item keys."""
+    if not isinstance(param_value, list):
+        return []
+    return [
+        f"Line item {li_key!r} references unknown key {ref_key!r} via {param_name!r}"
+        for ref_key in param_value
+        if isinstance(ref_key, str) and ref_key not in valid_keys
+    ]
+
+
 def check_cross_refs(spec: ModelSpec) -> list[str]:
     """Validate that line item cross-references point to existing keys."""
     errors: list[str] = []
@@ -83,16 +101,9 @@ def check_cross_refs(spec: ModelSpec) -> list[str]:
 
     for li in spec.line_items:
         for param_name, param_value in li.formula_params.items():
-            if (
-                param_name in _KEY_REF_PARAMS
-                and isinstance(param_value, str)
-                and param_value
-                and param_value not in line_item_keys
-            ):
-                errors.append(f"Line item {li.key!r} references unknown key {param_value!r} via {param_name!r}")
-            if param_name in _KEY_LIST_REF_PARAMS and isinstance(param_value, list):
-                for ref_key in param_value:
-                    if isinstance(ref_key, str) and ref_key not in line_item_keys:
-                        errors.append(f"Line item {li.key!r} references unknown key {ref_key!r} via {param_name!r}")
+            if param_name in _KEY_REF_PARAMS:
+                errors.extend(_check_single_key_ref(li.key, param_name, param_value, line_item_keys))
+            if param_name in _KEY_LIST_REF_PARAMS:
+                errors.extend(_check_list_key_ref(li.key, param_name, param_value, line_item_keys))
 
     return errors
