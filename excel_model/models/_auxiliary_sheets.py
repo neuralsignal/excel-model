@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
+from openpyxl.worksheet.worksheet import Worksheet
 
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
@@ -18,6 +21,35 @@ from excel_model.style import (
     get_number_format,
 )
 from excel_model.time_engine import Period
+
+
+def write_assumption_row(
+    wb: Workbook,
+    ws: Worksheet,
+    sheet_name: str,
+    row: int,
+    label: str,
+    range_name: str,
+    value: Any,
+    fmt: str,
+    style: StyleConfig,
+) -> None:
+    """Write a single assumption row: label, named range, value, format."""
+    ws.cell(row=row, column=1, value=sanitize_cell_text(label))
+    ws.cell(row=row, column=2, value=range_name)
+
+    value_cell = ws.cell(row=row, column=3, value=value)
+    value_cell.number_format = get_number_format(fmt, style)
+    value_cell.alignment = Alignment(horizontal="right")
+
+    apply_normal_style(ws.cell(row=row, column=1), style)
+    apply_normal_style(ws.cell(row=row, column=2), style)
+    apply_normal_style(value_cell, style)
+
+    ws.cell(row=row, column=4, value=fmt)
+    apply_normal_style(ws.cell(row=row, column=4), style)
+
+    register_named_range(wb, range_name, sheet_name, row, 3)
 
 
 def build_assumptions_sheet(
@@ -54,24 +86,18 @@ def build_assumptions_sheet(
         group_start_row = current_row
         for assumption in assumptions:
             range_name = f"{scenario_prefix}{assumption.name}" if scenario_prefix else assumption.name
-            ws.cell(row=current_row, column=1, value=sanitize_cell_text(assumption.label))
-            ws.cell(row=current_row, column=2, value=range_name)
-
-            value_cell = ws.cell(row=current_row, column=3, value=assumption.value)
-            value_cell.number_format = get_number_format(assumption.format, style)
-            value_cell.alignment = Alignment(horizontal="right")
-
-            apply_normal_style(ws.cell(row=current_row, column=1), style)
-            apply_normal_style(ws.cell(row=current_row, column=2), style)
-            apply_normal_style(value_cell, style)
-
-            ws.cell(row=current_row, column=4, value=assumption.format)
-            apply_normal_style(ws.cell(row=current_row, column=4), style)
-
+            write_assumption_row(
+                wb,
+                ws,
+                sheet_name,
+                current_row,
+                assumption.label,
+                range_name,
+                assumption.value,
+                assumption.format,
+                style,
+            )
             assumption_rows[assumption.name] = current_row
-
-            register_named_range(wb, range_name, sheet_name, current_row, 3)
-
             current_row += 1
 
         apply_assumption_sheet_validation(

@@ -11,6 +11,7 @@ from excel_model.models._auxiliary_sheets import (
     build_assumptions_sheet,
     build_drivers_sheet,
     build_inputs_sheet,
+    write_assumption_row,
 )
 from excel_model.models._sheet_builder import (
     HeaderLayout,
@@ -27,12 +28,10 @@ from excel_model.models._sheet_builder import (
     write_section_header,
     write_title_row,
 )
-from excel_model.named_ranges import get_col_letter, register_named_range
+from excel_model.named_ranges import get_col_letter
 from excel_model.spec import ModelSpec, ScenarioDef
 from excel_model.style import (
     StyleConfig,
-    apply_normal_style,
-    apply_section_header_style,
     get_number_format,
 )
 from excel_model.time_engine import Period
@@ -69,7 +68,8 @@ def _build_scenario_assumptions(
     style: StyleConfig,
 ) -> None:
     """Build Assumptions sheet with one section per scenario."""
-    ws = wb.create_sheet(title="Assumptions")
+    sheet_name = "Assumptions"
+    ws = wb.create_sheet(title=sheet_name)
 
     write_title_row(ws, f"{spec.title} — Scenario Assumptions", 4, style)
     write_four_col_header(ws, style)
@@ -79,32 +79,16 @@ def _build_scenario_assumptions(
     for scenario in spec.scenarios:
         prefix = _scenario_prefix(scenario)
 
-        ws.merge_cells(f"A{current_row}:D{current_row}")
-        sec_cell = ws[f"A{current_row}"]
-        sec_cell.value = sanitize_cell_text(f"{scenario.label} Assumptions")
-        apply_section_header_style(sec_cell, style)
+        write_section_header(ws, f"{scenario.label} Assumptions", current_row, 4, style)
         current_row += 1
 
         for assumption in spec.assumptions:
             range_name = f"{prefix}{assumption.name}"
-            # Override value if specified for this scenario
             value = scenario.assumption_overrides.get(assumption.name, assumption.value)
 
-            ws.cell(row=current_row, column=1, value=sanitize_cell_text(assumption.label))
-            ws.cell(row=current_row, column=2, value=range_name)
-
-            value_cell = ws.cell(row=current_row, column=3, value=value)
-            value_cell.number_format = get_number_format(assumption.format, style)
-            value_cell.alignment = Alignment(horizontal="right")
-
-            apply_normal_style(ws.cell(row=current_row, column=1), style)
-            apply_normal_style(ws.cell(row=current_row, column=2), style)
-            apply_normal_style(value_cell, style)
-
-            ws.cell(row=current_row, column=4, value=assumption.format)
-            apply_normal_style(ws.cell(row=current_row, column=4), style)
-
-            register_named_range(wb, range_name, "Assumptions", current_row, 3)
+            write_assumption_row(
+                wb, ws, sheet_name, current_row, assumption.label, range_name, value, assumption.format, style
+            )
             current_row += 1
 
 
