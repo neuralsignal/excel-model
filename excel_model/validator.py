@@ -6,9 +6,9 @@ from excel_model.exceptions import FormulaInjectionError
 from excel_model.formula_param_validator import check_cross_refs, check_formula_params
 from excel_model.injection_guard import validate_text_field
 from excel_model.spec import ModelSpec
+from excel_model.style import HEX_COLOR_RE
 
 _VALID_NAMED_RANGE_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
-_HEX_COLOR_RE = re.compile(r"^#?[0-9A-Fa-f]{6}$")
 
 
 _VALID_MODEL_TYPES = {"p_and_l", "dcf", "budget_vs_actuals", "scenario", "comparison", "custom"}
@@ -33,7 +33,7 @@ def _validate_colors(spec: ModelSpec) -> list[str]:
     """Reject column group color_hex values that are not well-formed 6-digit hex."""
     errors: list[str] = []
     for cg in spec.column_groups:
-        if not _HEX_COLOR_RE.match(cg.color_hex):
+        if not HEX_COLOR_RE.match(cg.color_hex):
             errors.append(
                 f"Column group {cg.key!r} has invalid color_hex {cg.color_hex!r}. "
                 f"Must be a 6-digit hex color (e.g. 'FF8800' or '#FF8800')."
