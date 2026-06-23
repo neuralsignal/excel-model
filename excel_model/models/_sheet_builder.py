@@ -10,6 +10,7 @@ from openpyxl.styles import Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
+from excel_model.formula_types import CellContext
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.named_ranges import get_col_letter
 from excel_model.spec import LineItemDef
@@ -242,3 +243,33 @@ def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: in
         border_col = 2 + n_history
         if border_col <= total_cols:
             ws.cell(row=row, column=border_col).border = Border(left=Side(style="thin"))
+
+
+def make_cell_context(
+    render_ctx: SheetRenderContext,
+    period_index: int,
+    col_idx: int,
+    col_letter: str,
+    prior_col_letter: str,
+    row: int,
+    scenario_prefix: str,
+    entity_col_range: str,
+    driver_names: frozenset[str],
+) -> CellContext:
+    """Build a CellContext from shared render state plus per-cell parameters."""
+    return CellContext(
+        period_index=period_index,
+        n_history=render_ctx.n_history,
+        row=row,
+        col=col_idx,
+        col_letter=col_letter,
+        prior_col_letter=prior_col_letter,
+        named_ranges=render_ctx.named_ranges,
+        row_map=render_ctx.row_map,
+        inputs_row_map=render_ctx.inputs_row_map,
+        scenario_prefix=scenario_prefix,
+        first_proj_col_letter=render_ctx.first_proj_col_letter,
+        last_proj_col_letter=render_ctx.last_proj_col_letter,
+        entity_col_range=entity_col_range,
+        driver_names=driver_names,
+    )
