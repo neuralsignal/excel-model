@@ -245,25 +245,32 @@ def write_history_border(ws: Worksheet, row: int, n_history: int, total_cols: in
             ws.cell(row=row, column=border_col).border = Border(left=Side(style="thin"))
 
 
+@dataclass(frozen=True)
+class CellPosition:
+    """Per-cell positional data for formula rendering."""
+
+    period_index: int
+    col: int
+    col_letter: str
+    prior_col_letter: str
+    row: int
+
+
 def make_cell_context(
     render_ctx: SheetRenderContext,
-    period_index: int,
-    col_idx: int,
-    col_letter: str,
-    prior_col_letter: str,
-    row: int,
+    cell_pos: CellPosition,
     scenario_prefix: str,
     entity_col_range: str,
     driver_names: frozenset[str],
 ) -> CellContext:
     """Build a CellContext from shared render state plus per-cell parameters."""
     return CellContext(
-        period_index=period_index,
+        period_index=cell_pos.period_index,
         n_history=render_ctx.n_history,
-        row=row,
-        col=col_idx,
-        col_letter=col_letter,
-        prior_col_letter=prior_col_letter,
+        row=cell_pos.row,
+        col=cell_pos.col,
+        col_letter=cell_pos.col_letter,
+        prior_col_letter=cell_pos.prior_col_letter,
         named_ranges=render_ctx.named_ranges,
         row_map=render_ctx.row_map,
         inputs_row_map=render_ctx.inputs_row_map,
