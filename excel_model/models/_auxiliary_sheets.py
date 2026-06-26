@@ -145,23 +145,19 @@ def build_drivers_sheet(
             # Override value if specified in driver_overrides
             value = scenario.driver_overrides.get(driver.name, driver.value)
 
-            ws.cell(row=current_row, column=1, value=sanitize_cell_text(driver.label))
-            ws.cell(row=current_row, column=2, value=range_name)
-
-            value_cell = ws.cell(row=current_row, column=3, value=value)
-            value_cell.number_format = get_number_format(driver.format, style)
-            value_cell.alignment = Alignment(horizontal="right")
-
-            apply_normal_style(ws.cell(row=current_row, column=1), style)
-            apply_normal_style(ws.cell(row=current_row, column=2), style)
-            apply_normal_style(value_cell, style)
-
-            ws.cell(row=current_row, column=4, value=driver.format)
-            apply_normal_style(ws.cell(row=current_row, column=4), style)
+            write_assumption_row(
+                wb,
+                ws,
+                sheet_name,
+                current_row,
+                driver.label,
+                range_name,
+                value,
+                driver.format,
+                style,
+            )
 
             driver_rows[driver.name] = current_row
-
-            register_named_range(wb, range_name, sheet_name, current_row, 3)
             current_row += 1
 
     return driver_rows
