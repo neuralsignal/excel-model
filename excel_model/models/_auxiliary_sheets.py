@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from openpyxl import Workbook
@@ -23,33 +24,41 @@ from excel_model.style import (
 from excel_model.time_engine import Period
 
 
+@dataclass(frozen=True)
+class SheetWriteContext:
+    """Fixed context for writing rows within a single auxiliary sheet."""
+
+    wb: Workbook
+    ws: Worksheet
+    sheet_name: str
+    style: StyleConfig
+
+
 def write_assumption_row(
-    wb: Workbook,
-    ws: Worksheet,
-    sheet_name: str,
+    write_ctx: SheetWriteContext,
     row: int,
     label: str,
     range_name: str,
     value: Any,
     fmt: str,
-    style: StyleConfig,
 ) -> None:
     """Write a single assumption row: label, named range, value, format."""
+    ws = write_ctx.ws
     ws.cell(row=row, column=1, value=sanitize_cell_text(label))
     ws.cell(row=row, column=2, value=range_name)
 
     value_cell = ws.cell(row=row, column=3, value=value)
-    value_cell.number_format = get_number_format(fmt, style)
+    value_cell.number_format = get_number_format(fmt, write_ctx.style)
     value_cell.alignment = Alignment(horizontal="right")
 
-    apply_normal_style(ws.cell(row=row, column=1), style)
-    apply_normal_style(ws.cell(row=row, column=2), style)
-    apply_normal_style(value_cell, style)
+    apply_normal_style(ws.cell(row=row, column=1), write_ctx.style)
+    apply_normal_style(ws.cell(row=row, column=2), write_ctx.style)
+    apply_normal_style(value_cell, write_ctx.style)
 
     ws.cell(row=row, column=4, value=fmt)
-    apply_normal_style(ws.cell(row=row, column=4), style)
+    apply_normal_style(ws.cell(row=row, column=4), write_ctx.style)
 
-    register_named_range(wb, range_name, sheet_name, row, 3)
+    register_named_range(write_ctx.wb, range_name, write_ctx.sheet_name, row, 3)
 
 
 def build_assumptions_sheet(
@@ -75,6 +84,8 @@ def build_assumptions_sheet(
     current_row = 3
     assumption_rows: dict[str, int] = {}
 
+    write_ctx = SheetWriteContext(wb=wb, ws=ws, sheet_name=sheet_name, style=style)
+
     groups: dict[str, list[AssumptionDef]] = {}
     for assumption in spec.assumptions:
         groups.setdefault(assumption.group, []).append(assumption)
@@ -87,15 +98,12 @@ def build_assumptions_sheet(
         for assumption in assumptions:
             range_name = f"{scenario_prefix}{assumption.name}" if scenario_prefix else assumption.name
             write_assumption_row(
-                wb,
-                ws,
-                sheet_name,
+                write_ctx,
                 current_row,
                 assumption.label,
                 range_name,
                 assumption.value,
                 assumption.format,
-                style,
             )
             assumption_rows[assumption.name] = current_row
             current_row += 1
