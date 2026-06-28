@@ -1,5 +1,9 @@
 """Extended validator tests — formula_params, cross-ref, WACC≠TGR, comparison, drivers."""
 
+from hypothesis import given
+from hypothesis import strategies as st
+
+from excel_model.formula_param_validator import _check_list_key_ref
 from excel_model.spec import (
     AssumptionDef,
     DriverDef,
@@ -372,3 +376,18 @@ class TestDriverValidation:
         )
         errors = validate_spec(spec)
         assert not any("driver" in e.lower() for e in errors)
+
+
+class TestCheckListKeyRefNonList:
+    def test_none_returns_empty(self):
+        assert _check_list_key_ref("li", "addend_keys", None, {"a", "b"}) == []
+
+    def test_string_returns_empty(self):
+        assert _check_list_key_ref("li", "addend_keys", "single_key", {"a"}) == []
+
+    def test_int_returns_empty(self):
+        assert _check_list_key_ref("li", "addend_keys", 42, {"a"}) == []
+
+    @given(param_value=st.from_type(type).flatmap(st.from_type).filter(lambda v: not isinstance(v, list)))
+    def test_arbitrary_non_list_returns_empty(self, param_value):
+        assert _check_list_key_ref("li", "addend_keys", param_value, {"a"}) == []
