@@ -221,6 +221,23 @@ def test_returns_worksheet(wb, style):
     assert isinstance(result, Worksheet)
 
 
+def test_data_sheet_rejects_header_with_injection_prefix(wb, style):
+    spec = _data_spec(
+        sheet_name="INJ",
+        headers=("=CMD", "Normal"),
+        col_widths=(10.0, 10.0),
+    )
+    with pytest.raises(SpecValidationError, match="formula injection"):
+        build_data_sheet(wb=wb, spec=spec, rows=[], style=style)
+
+
+def test_data_sheet_sanitizes_row_string_values(wb, style):
+    spec = _data_spec(sheet_name="ROWI")
+    ws = build_data_sheet(wb=wb, spec=spec, rows=[["=1+1", 42]], style=style)
+    assert ws.cell(row=3, column=1).value == "'=1+1"
+    assert ws.cell(row=3, column=2).value == 42
+
+
 def test_data_sheet_rejects_invalid_spec(wb, style):
     spec = _data_spec(headers=(), col_widths=())
     with pytest.raises(SpecValidationError, match="headers must not be empty"):
@@ -234,6 +251,7 @@ def test_data_sheet_rejects_invalid_spec(wb, style):
 _printable_text = st.text(
     alphabet=st.characters(
         whitelist_categories=("L", "N", "P", "S"),
+        blacklist_characters="=+-@",
     ),
     min_size=1,
     max_size=20,
@@ -494,6 +512,24 @@ def test_sumifs_number_format_on_yoy_cells(wb, style):
     ws = build_sumifs_pivot(wb=wb, spec=spec, row_labels=[["DE Berlin"]], style=style)
     yoy_cell = ws.cell(row=3, column=4)
     assert yoy_cell.number_format == "0.0%"
+
+
+def test_sumifs_sanitizes_header_row_strings(wb, style):
+    spec = _pivot_spec(row_label_headers=("Normal",))
+    ws = build_sumifs_pivot(wb=wb, spec=spec, row_labels=[["DE Berlin"]], style=style)
+    assert ws.cell(row=2, column=1).value == "Normal"
+    assert ws.cell(row=2, column=2).value == 2023
+
+
+def test_sumifs_sanitizes_row_label_strings(wb, style):
+    ws = build_sumifs_pivot(
+        wb=wb,
+        spec=_pivot_spec(),
+        row_labels=[["=CMD|calc!A0"], ["-normal"]],
+        style=style,
+    )
+    assert ws.cell(row=3, column=1).value == "'=CMD|calc!A0"
+    assert ws.cell(row=4, column=1).value == "'-normal"
 
 
 def test_sumifs_rejects_invalid_spec(wb, style):

@@ -18,6 +18,7 @@ from excel_model.data_sheet_validator import (
     validate_sumifs_pivot_def,
 )
 from excel_model.exceptions import SpecValidationError
+from excel_model.injection_guard import sanitize_cell_text
 from excel_model.models._sheet_builder import write_title_row
 from excel_model.spec import DataSheetDef, SumifsPivotDef
 from excel_model.style import (
@@ -83,13 +84,15 @@ def build_data_sheet(
     write_title_row(ws, spec.title, n_cols, style)
 
     for col_idx, header in enumerate(spec.headers, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=header)
+        cell = ws.cell(row=2, column=col_idx, value=sanitize_cell_text(header))
         apply_header_style(cell, style)
 
     for row_idx, row_data in enumerate(rows, start=3):
         is_alt = row_idx % 2 == 0
         for col_idx, value in enumerate(row_data, start=1):
-            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell = ws.cell(
+                row=row_idx, column=col_idx, value=sanitize_cell_text(value) if isinstance(value, str) else value
+            )
             apply_normal_style(cell, style)
             if is_alt:
                 apply_alt_row_style(cell, style)
@@ -149,7 +152,7 @@ def build_sumifs_pivot(
     write_title_row(ws, spec.title, n_total_cols, style)
 
     for col_idx, hdr in enumerate(header_row, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=hdr)
+        cell = ws.cell(row=2, column=col_idx, value=sanitize_cell_text(hdr) if isinstance(hdr, str) else hdr)
         apply_header_style(cell, style)
 
     first_data_col = n_label_cols + 1
@@ -159,7 +162,11 @@ def build_sumifs_pivot(
         ctx = RowWriteContext(ws, row_idx, row_idx % 2 == 0, style)
 
         for label_col_idx, label_val in enumerate(label_vals, start=1):
-            cell = ws.cell(row=row_idx, column=label_col_idx, value=label_val)
+            cell = ws.cell(
+                row=row_idx,
+                column=label_col_idx,
+                value=sanitize_cell_text(label_val) if isinstance(label_val, str) else label_val,
+            )
             apply_normal_style(cell, style)
             if ctx.is_alt:
                 apply_alt_row_style(cell, style)
