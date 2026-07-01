@@ -95,6 +95,16 @@ def test_sheet_name_exactly_31_chars_accepted():
 # ---------------------------------------------------------------------------
 
 
+def test_data_sheet_header_injection_rejected():
+    errors = validate_data_sheet_def(_data_spec(headers=("=CMD", "Normal")))
+    assert any("formula injection" in e.lower() for e in errors)
+
+
+def test_sumifs_row_label_header_injection_rejected():
+    errors = validate_sumifs_pivot_def(_pivot_spec(row_label_headers=("+malicious",)))
+    assert any("formula injection" in e.lower() for e in errors)
+
+
 def test_sumifs_empty_row_label_headers():
     spec = _pivot_spec(
         row_label_headers=(),

@@ -2,6 +2,7 @@
 
 import re
 
+from excel_model.injection_guard import validate_text_field
 from excel_model.spec import DataSheetDef, SumifsPivotDef
 
 _VALID_COL_LETTER_RE = re.compile(r"^[A-Z]{1,3}$")
@@ -40,6 +41,11 @@ def validate_data_sheet_def(spec: DataSheetDef) -> list[str]:
         errors.append("headers must not be empty")
     if spec.headers and len(spec.col_widths) != len(spec.headers):
         errors.append(f"col_widths length ({len(spec.col_widths)}) must match headers length ({len(spec.headers)})")
+    for i, header in enumerate(spec.headers):
+        try:
+            validate_text_field(header, f"headers[{i}]")
+        except Exception as exc:
+            errors.append(str(exc))
     if spec.freeze_row < 0:
         errors.append(f"freeze_row must be >= 0, got {spec.freeze_row}")
     for idx in spec.number_formats:
@@ -65,6 +71,11 @@ def validate_sumifs_pivot_def(spec: SumifsPivotDef) -> list[str]:
     errors.extend(_validate_sheet_name_safety(spec.data_sheet, "data_sheet"))
     if not spec.row_label_headers:
         errors.append("row_label_headers must not be empty")
+    for i, header in enumerate(spec.row_label_headers):
+        try:
+            validate_text_field(header, f"row_label_headers[{i}]")
+        except Exception as exc:
+            errors.append(str(exc))
     if not spec.row_filter_cols:
         errors.append("row_filter_cols must not be empty")
     if spec.row_filter_cols and spec.row_label_headers and len(spec.row_filter_cols) > len(spec.row_label_headers):
