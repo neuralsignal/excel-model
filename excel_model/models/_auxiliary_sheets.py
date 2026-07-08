@@ -209,7 +209,7 @@ def build_inputs_sheet(
     current_row = 3
 
     for line_item_key, source_col in spec.inputs.value_cols.items():
-        label_cell = ws.cell(row=current_row, column=1, value=line_item_key)
+        label_cell = ws.cell(row=current_row, column=1, value=sanitize_cell_text(line_item_key))
         apply_normal_style(label_cell, style)
 
         inputs_row_map[line_item_key] = current_row
