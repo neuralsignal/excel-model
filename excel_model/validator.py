@@ -237,4 +237,7 @@ def _validate_text_fields(spec: ModelSpec) -> list[str]:
     for cg in spec.column_groups:
         _check(cg.label, f"column group {cg.key!r} label")
 
+    for key in spec.inputs.value_cols:
+        _check(key, f"inputs.value_cols key {key!r}")
+
     return errors
