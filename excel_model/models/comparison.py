@@ -7,7 +7,6 @@ from openpyxl.worksheet.worksheet import Worksheet
 from excel_model.exceptions import ExcelModelError
 from excel_model.formula_engine import render_formula
 from excel_model.injection_guard import sanitize_cell_text
-from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet
 from excel_model.models._sheet_builder import (
     HeaderLayout,
@@ -34,7 +33,6 @@ from excel_model.style import (
 def build_comparison(
     wb: Workbook,
     spec: ModelSpec,
-    inputs: InputData | None,
     style: StyleConfig,
 ) -> None:
     """Build Assumptions and Comparison Model sheets."""
