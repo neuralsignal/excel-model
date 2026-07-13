@@ -7,12 +7,14 @@ from excel_model.formula_engine import render_formula
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import (
+    SheetWriteContext,
     build_assumptions_sheet,
     build_drivers_sheet,
     build_inputs_sheet,
     write_assumption_row,
 )
 from excel_model.models._sheet_builder import (
+    CellPosition,
     HeaderLayout,
     SheetRenderContext,
     apply_label_style,
@@ -77,6 +79,8 @@ def _build_scenario_assumptions(
 
     current_row = 3
 
+    write_ctx = SheetWriteContext(wb=wb, ws=ws, sheet_name=sheet_name, style=style)
+
     for scenario in spec.scenarios:
         prefix = _scenario_prefix(scenario)
 
@@ -87,9 +91,7 @@ def _build_scenario_assumptions(
             range_name = f"{prefix}{assumption.name}"
             value = scenario.assumption_overrides.get(assumption.name, assumption.value)
 
-            write_assumption_row(
-                wb, ws, sheet_name, current_row, assumption.label, range_name, value, assumption.format, style
-            )
+            write_assumption_row(write_ctx, current_row, assumption.label, range_name, value, assumption.format)
             current_row += 1
 
 
@@ -151,13 +153,16 @@ def _build_scenario_model_sheet(
 
                     params = resolve_formula_params(li)
 
+                    cell_pos = CellPosition(
+                        period_index=period.index,
+                        col=col_idx,
+                        col_letter=col_letter,
+                        prior_col_letter=prior_col_letter,
+                        row=current_row,
+                    )
                     ctx = make_cell_context(
                         render_ctx,
-                        period.index,
-                        col_idx,
-                        col_letter,
-                        prior_col_letter,
-                        current_row,
+                        cell_pos,
                         scenario_prefix=prefix,
                         entity_col_range="",
                         driver_names=frozenset(d.name for d in spec.drivers),

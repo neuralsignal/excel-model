@@ -10,6 +10,7 @@ from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
+    CellPosition,
     HeaderLayout,
     SheetRenderContext,
     apply_data_cell_style,
@@ -57,13 +58,16 @@ def _write_npv_sum_cell(
     """Write NPV_SUM formula in the first data column, spanning all projection cols."""
     first_data_col = 2
     col_letter = get_col_letter(first_data_col)
+    cell_pos = CellPosition(
+        period_index=0,
+        col=first_data_col,
+        col_letter=col_letter,
+        prior_col_letter="",
+        row=row,
+    )
     ctx = make_cell_context(
         render_ctx,
-        0,
-        first_data_col,
-        col_letter,
-        "",
-        row,
+        cell_pos,
         scenario_prefix="",
         entity_col_range="",
         driver_names=frozenset(),
@@ -89,13 +93,16 @@ def _write_standard_cells(
 
         params = resolve_formula_params(li)
 
+        cell_pos = CellPosition(
+            period_index=period.index,
+            col=col_idx,
+            col_letter=col_letter,
+            prior_col_letter=prior_col_letter,
+            row=row,
+        )
         ctx = make_cell_context(
             render_ctx,
-            period.index,
-            col_idx,
-            col_letter,
-            prior_col_letter,
-            row,
+            cell_pos,
             scenario_prefix="",
             entity_col_range="",
             driver_names=frozenset(),

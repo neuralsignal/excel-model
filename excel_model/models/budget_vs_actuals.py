@@ -8,6 +8,7 @@ from excel_model.injection_guard import sanitize_cell_text
 from excel_model.loader import InputData
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet, build_inputs_sheet
 from excel_model.models._sheet_builder import (
+    CellPosition,
     HeaderLayout,
     SheetRenderContext,
     apply_label_style,
@@ -97,13 +98,16 @@ def _build_bva_model_sheet(
 
                     params = resolve_formula_params(li)
 
+                    cell_pos = CellPosition(
+                        period_index=period.index,
+                        col=col_idx,
+                        col_letter=col_letter,
+                        prior_col_letter=prior_col_letter,
+                        row=current_row,
+                    )
                     ctx = make_cell_context(
                         render_ctx,
-                        period.index,
-                        col_idx,
-                        col_letter,
-                        prior_col_letter,
-                        current_row,
+                        cell_pos,
                         scenario_prefix="",
                         entity_col_range="",
                         driver_names=frozenset(),

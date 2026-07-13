@@ -9,6 +9,7 @@ from excel_model.formula_engine import render_formula
 from excel_model.injection_guard import sanitize_cell_text
 from excel_model.models._auxiliary_sheets import build_assumptions_sheet
 from excel_model.models._sheet_builder import (
+    CellPosition,
     HeaderLayout,
     SheetRenderContext,
     apply_data_cell_style,
@@ -113,13 +114,16 @@ def _build_comparison_model_sheet(
                     if base_col_idx is not None:
                         params["_base_col_letter"] = get_col_letter(base_col_idx)
 
+                cell_pos = CellPosition(
+                    period_index=0,
+                    col=col_idx,
+                    col_letter=col_letter,
+                    prior_col_letter="",
+                    row=current_row,
+                )
                 ctx = make_cell_context(
                     render_ctx,
-                    0,
-                    col_idx,
-                    col_letter,
-                    "",
-                    current_row,
+                    cell_pos,
                     scenario_prefix="",
                     entity_col_range=entity_col_range,
                     driver_names=frozenset(),
