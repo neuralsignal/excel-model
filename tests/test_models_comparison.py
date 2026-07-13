@@ -106,7 +106,7 @@ def test_comparison_creates_sheets(comparison_spec, style):
     wb = Workbook()
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
-    build_comparison(wb, comparison_spec, None, style)
+    build_comparison(wb, comparison_spec, style)
     assert "Assumptions" in wb.sheetnames
     assert "Model" in wb.sheetnames
 
@@ -115,7 +115,7 @@ def test_comparison_entity_headers(comparison_spec, style):
     wb = Workbook()
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
-    build_comparison(wb, comparison_spec, None, style)
+    build_comparison(wb, comparison_spec, style)
     ws = wb["Model"]
     # Row 2 should have "Metric" in A2 and entity labels
     assert ws["A2"].value == "Metric"
@@ -129,7 +129,7 @@ def test_comparison_has_section_headers(comparison_spec, style):
     wb = Workbook()
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
-    build_comparison(wb, comparison_spec, None, style)
+    build_comparison(wb, comparison_spec, style)
     ws = wb["Model"]
     # Look for section headers
     all_values = [ws.cell(row=r, column=1).value for r in range(3, 15)]
@@ -142,7 +142,7 @@ def test_comparison_ratio_formula(comparison_spec, style):
     wb = Workbook()
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
-    build_comparison(wb, comparison_spec, None, style)
+    build_comparison(wb, comparison_spec, style)
     ws = wb["Model"]
     # Find a ratio formula cell
     found = False
@@ -157,7 +157,7 @@ def test_comparison_rank_formula(comparison_spec, style):
     wb = Workbook()
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
-    build_comparison(wb, comparison_spec, None, style)
+    build_comparison(wb, comparison_spec, style)
     ws = wb["Model"]
     # Find RANK formula
     found = False
@@ -172,7 +172,7 @@ def test_comparison_constant_values(comparison_spec, style):
     wb = Workbook()
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
-    build_comparison(wb, comparison_spec, None, style)
+    build_comparison(wb, comparison_spec, style)
     ws = wb["Model"]
     # Constant formula items should write literal 0 values
     found_zero = False
@@ -187,7 +187,7 @@ def _build_wb(spec, style):
     wb = Workbook()
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
-    build_comparison(wb, spec, None, style)
+    build_comparison(wb, spec, style)
     return wb
 
 
@@ -362,4 +362,4 @@ def test_comparison_row_mismatch_raises(comparison_spec, style):
         patch("excel_model.models.comparison.assign_row_map", side_effect=bad_row_map),
         pytest.raises(ExcelModelError, match="Row mismatch"),
     ):
-        build_comparison(wb, comparison_spec, None, style)
+        build_comparison(wb, comparison_spec, style)

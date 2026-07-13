@@ -38,7 +38,7 @@ def build_workbook(
         # Comparison models don't use time_engine periods
         from excel_model.models.comparison import build_comparison
 
-        build_comparison(wb, spec, inputs, style)
+        build_comparison(wb, spec, style)
     else:
         periods = generate_periods(
             start_period=spec.start_period,
