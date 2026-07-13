@@ -17,6 +17,7 @@ from excel_model.models._sheet_builder import (
     assign_row_map,
     build_model_header,
     compute_proj_col_range,
+    effective_format,
     group_line_items_by_section,
     make_cell_context,
     resolve_formula_params,
@@ -102,8 +103,7 @@ def _write_standard_cells(
 
         value = render_formula(li.formula_type, params, ctx)
         cell = ws.cell(row=row, column=col_idx, value=value)
-        fmt = li.format if li.format else "currency"
-        cell.number_format = get_number_format(fmt, render_ctx.style)
+        cell.number_format = get_number_format(effective_format(li), render_ctx.style)
         cell.alignment = Alignment(horizontal="right")
         apply_data_cell_style(cell, li, render_ctx.style, period.is_history)
 
