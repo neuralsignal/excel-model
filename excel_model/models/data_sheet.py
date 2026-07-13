@@ -38,6 +38,13 @@ class RowWriteContext:
     style: StyleConfig
 
 
+def _apply_row_style(cell: Any, ctx: RowWriteContext) -> None:
+    """Apply normal style and, when the row is alternate, alt-row style."""
+    apply_normal_style(cell, ctx.style)
+    if ctx.is_alt:
+        apply_alt_row_style(cell, ctx.style)
+
+
 def _quote_sheet_ref(name: str) -> str:
     """Return name single-quoted for safe use in an Excel formula sheet reference.
 
@@ -160,9 +167,7 @@ def build_sumifs_pivot(
 
         for label_col_idx, label_val in enumerate(label_vals, start=1):
             cell = ws.cell(row=row_idx, column=label_col_idx, value=label_val)
-            apply_normal_style(cell, style)
-            if ctx.is_alt:
-                apply_alt_row_style(cell, style)
+            _apply_row_style(cell, ctx)
 
         _write_sumifs_data_cells(ctx, spec, first_data_col, n_data_cols)
 
@@ -212,9 +217,7 @@ def _write_sumifs_data_cells(
         formula = f"=SUMIFS({sheet_ref}!${spec.value_col}:${spec.value_col},{all_criteria})"
 
         cell = ctx.ws.cell(row=ctx.row_idx, column=data_col_idx, value=formula)
-        apply_normal_style(cell, ctx.style)
-        if ctx.is_alt:
-            apply_alt_row_style(cell, ctx.style)
+        _apply_row_style(cell, ctx)
         cell.number_format = spec.number_format_data
 
 
@@ -230,9 +233,7 @@ def _write_total_cell(
     last_letter = get_column_letter(last_data_col)
     formula = f"=SUM({first_letter}{ctx.row_idx}:{last_letter}{ctx.row_idx})"
     cell = ctx.ws.cell(row=ctx.row_idx, column=total_col_idx, value=formula)
-    apply_normal_style(cell, ctx.style)
-    if ctx.is_alt:
-        apply_alt_row_style(cell, ctx.style)
+    _apply_row_style(cell, ctx)
     cell.number_format = number_format
 
 
@@ -254,7 +255,5 @@ def _write_yoy_cells(
             f"/ABS({prev_col_letter}{ctx.row_idx}))"
         )
         cell = ctx.ws.cell(row=ctx.row_idx, column=yoy_col_idx, value=yoy_formula)
-        apply_normal_style(cell, ctx.style)
-        if ctx.is_alt:
-            apply_alt_row_style(cell, ctx.style)
+        _apply_row_style(cell, ctx)
         cell.number_format = number_format
