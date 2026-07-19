@@ -142,6 +142,8 @@ def build_drivers_sheet(
     current_row = 3
     driver_rows: dict[str, int] = {}
 
+    write_ctx = SheetWriteContext(wb=wb, ws=ws, sheet_name=sheet_name, style=style)
+
     for scenario in scenarios:
         prefix = scenario.name.capitalize()
 
@@ -150,19 +152,15 @@ def build_drivers_sheet(
 
         for driver in spec.drivers:
             range_name = f"{prefix}{driver.name}"
-            # Override value if specified in driver_overrides
             value = scenario.driver_overrides.get(driver.name, driver.value)
 
             write_assumption_row(
-                wb,
-                ws,
-                sheet_name,
+                write_ctx,
                 current_row,
                 driver.label,
                 range_name,
                 value,
                 driver.format,
-                style,
             )
 
             driver_rows[driver.name] = current_row
